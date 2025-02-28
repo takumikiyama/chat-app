@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "start-socket": "node --loader ts-node/esm server.ts"
+    "start-socket": "node --loader ts-node/esm server.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.3.1",
