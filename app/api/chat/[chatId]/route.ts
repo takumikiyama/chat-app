@@ -4,9 +4,13 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // ✅ チャット履歴を取得 (GET)
-export async function GET(req: NextRequest, context: { params: { chatId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const { chatId } = context.params;
+    const chatId = params.chatId;
+
+    if (!chatId) {
+      return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
+    }
 
     // チャットが存在するか確認
     const chat = await prisma.chat.findUnique({
@@ -31,13 +35,13 @@ export async function GET(req: NextRequest, context: { params: { chatId: string 
 }
 
 // ✅ メッセージを送信 (POST)
-export async function POST(req: NextRequest, context: { params: { chatId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const { chatId } = context.params;
+    const chatId = params.chatId;
     const body = await req.json();
     const { senderId, content } = body;
 
-    if (!senderId || !content) {
+    if (!chatId || !senderId || !content) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
