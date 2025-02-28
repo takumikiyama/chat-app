@@ -3,13 +3,15 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// ✅ 正しい型で API のパラメータを取得
+interface Context {
+  params: { chatId: string };
+}
+
 // ✅ チャット履歴を取得 (GET)
-export async function GET(
-  req: Request,
-  context: { params?: { chatId?: string } } // ❗ `params` が undefined になる可能性を考慮
-) {
+export async function GET(req: Request, { params }: Context) {
   try {
-    const chatId = context.params?.chatId;
+    const chatId = params.chatId;
 
     if (!chatId) {
       return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
@@ -38,12 +40,9 @@ export async function GET(
 }
 
 // ✅ メッセージを送信 (POST)
-export async function POST(
-  req: Request,
-  context: { params?: { chatId?: string } } // ❗ `params` が undefined になる可能性を考慮
-) {
+export async function POST(req: Request, { params }: Context) {
   try {
-    const chatId = context.params?.chatId;
+    const chatId = params.chatId;
     const body = await req.json();
     const { senderId, content } = body;
 
