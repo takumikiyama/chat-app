@@ -3,21 +3,16 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// ✅ 正しい型で API のパラメータを取得
-interface Context {
-  params: { chatId: string };
-}
-
 // ✅ チャット履歴を取得 (GET)
-export async function GET(req: Request, { params }: Context) {
+export async function GET(req: Request, { params }: { params: { chatId: string } }) {
   try {
-    const chatId = params.chatId;
+    const { chatId } = params; // `params` から `chatId` を取得
 
     if (!chatId) {
       return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
     }
 
-    // チャットが存在するか確認
+    // ✅ チャットが存在するか確認
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
       include: {
@@ -40,9 +35,9 @@ export async function GET(req: Request, { params }: Context) {
 }
 
 // ✅ メッセージを送信 (POST)
-export async function POST(req: Request, { params }: Context) {
+export async function POST(req: Request, { params }: { params: { chatId: string } }) {
   try {
-    const chatId = params.chatId;
+    const { chatId } = params; // `params` から `chatId` を取得
     const body = await req.json();
     const { senderId, content } = body;
 
@@ -50,7 +45,7 @@ export async function POST(req: Request, { params }: Context) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    // チャットが存在するか確認
+    // ✅ チャットが存在するか確認
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
     });
