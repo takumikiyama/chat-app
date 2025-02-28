@@ -4,9 +4,12 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // ✅ チャット履歴を取得 (GET)
-export async function GET(req: Request, context: { params: { chatId: string } }) {
+export async function GET(
+  req: Request,
+  context: { params?: { chatId?: string } } // ❗ `params` が undefined になる可能性を考慮
+) {
   try {
-    const { chatId } = context.params;
+    const chatId = context.params?.chatId;
 
     if (!chatId) {
       return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
@@ -35,9 +38,12 @@ export async function GET(req: Request, context: { params: { chatId: string } })
 }
 
 // ✅ メッセージを送信 (POST)
-export async function POST(req: Request, context: { params: { chatId: string } }) {
+export async function POST(
+  req: Request,
+  context: { params?: { chatId?: string } } // ❗ `params` が undefined になる可能性を考慮
+) {
   try {
-    const { chatId } = context.params;
+    const chatId = context.params?.chatId;
     const body = await req.json();
     const { senderId, content } = body;
 
