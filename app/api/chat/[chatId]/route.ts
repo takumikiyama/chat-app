@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 // ✅ チャット履歴を取得 (GET)
-export async function GET(req: NextRequest, { params }: { params: Record<string, string> }) {
+export async function GET(req: Request, context: { params: { chatId: string } }) {
   try {
-    const chatId = params.chatId;
+    const { chatId } = context.params;
 
     if (!chatId) {
       return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
@@ -35,9 +35,9 @@ export async function GET(req: NextRequest, { params }: { params: Record<string,
 }
 
 // ✅ メッセージを送信 (POST)
-export async function POST(req: NextRequest, { params }: { params: Record<string, string> }) {
+export async function POST(req: Request, context: { params: { chatId: string } }) {
   try {
-    const chatId = params.chatId;
+    const { chatId } = context.params;
     const body = await req.json();
     const { senderId, content } = body;
 
