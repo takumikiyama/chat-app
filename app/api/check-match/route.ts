@@ -10,24 +10,24 @@ export async function POST(req: Request) {
     const { senderId, message } = await req.json();
 
     // 自分が送ったマッチメッセージを相手が送っているかチェック
-    const matches = await prisma.SentMessage.findMany({
+    const matches = await prisma.sentMessage.findMany({
       where: { receiverId: senderId, message },
     });
 
     for (const match of matches) {
       // すでにマッチしていないか確認
-      const existingMatch = await prisma.MatchPair.findFirst({
+      const existingMatch = await prisma.matchPair.findFirst({
         where: { user1Id: senderId, user2Id: match.senderId, message },
       });
 
       if (!existingMatch) {
         // マッチング成立を記録
-        await prisma.MatchPair.create({
+        await prisma.matchPair.create({
           data: { user1Id: senderId, user2Id: match.senderId, message },
         });
 
         // チャットを作成
-        await prisma.Chat.create({
+        await prisma.chat.create({
           data: { user1Id: senderId, user2Id: match.senderId },
         });
       }

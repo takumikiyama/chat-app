@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
     for (const receiverId of receiverIds) {
       // ✅ 送信メッセージをDBに保存
-      await prisma.SentMessage.create({
+      await prisma.sentMessage.create({
         data: {
           senderId,
           receiverId,
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       });
 
       // ✅ 相手が同じメッセージを送っているか確認
-      const existingMatch = await prisma.SentMessage.findFirst({
+      const existingMatch = await prisma.sentMessage.findFirst({
         where: {
           senderId: receiverId,
           receiverId: senderId,
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       console.log(`🎉 マッチング成立！${senderId} ⇄ ${matchedUserId}`);
 
       // ✅ `MatchPair` がすでに作成されているか確認
-      const existingMatchPair = await prisma.MatchPair.findFirst({
+      const existingMatchPair = await prisma.matchPair.findFirst({
         where: {
           OR: [
             { user1Id: senderId, user2Id: matchedUserId },
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       });
 
       if (!existingMatchPair) {
-        await prisma.MatchPair.create({
+        await prisma.matchPair.create({
           data: {
             user1Id: senderId,
             user2Id: matchedUserId,
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       }
 
       // ✅ `Chat` がすでに存在するか確認
-      const existingChat = await prisma.Chat.findFirst({
+      const existingChat = await prisma.chat.findFirst({
         where: {
           OR: [
             { user1Id: senderId, user2Id: matchedUserId },
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       });
 
       if (!existingChat) {
-        await prisma.Chat.create({
+        await prisma.chat.create({
           data: {
             user1Id: senderId,
             user2Id: matchedUserId,
