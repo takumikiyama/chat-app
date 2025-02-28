@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 // ✅ チャット履歴を取得 (GET)
-export async function GET(req: Request, { params }: { params: { chatId: string } }) {
+export async function GET(req: NextRequest, context: { params: { chatId: string } }) {
   try {
-    const { chatId } = params;
+    const { chatId } = context.params;
 
     // チャットが存在するか確認
-    const chat = await prisma.Chat.findUnique({
+    const chat = await prisma.chat.findUnique({
       where: { id: chatId },
       include: {
         messages: {
@@ -31,9 +31,9 @@ export async function GET(req: Request, { params }: { params: { chatId: string }
 }
 
 // ✅ メッセージを送信 (POST)
-export async function POST(req: Request, { params }: { params: { chatId: string } }) {
+export async function POST(req: NextRequest, context: { params: { chatId: string } }) {
   try {
-    const { chatId } = params;
+    const { chatId } = context.params;
     const body = await req.json();
     const { senderId, content } = body;
 
@@ -42,7 +42,7 @@ export async function POST(req: Request, { params }: { params: { chatId: string 
     }
 
     // チャットが存在するか確認
-    const chat = await prisma.Chat.findUnique({
+    const chat = await prisma.chat.findUnique({
       where: { id: chatId },
     });
 
@@ -51,7 +51,7 @@ export async function POST(req: Request, { params }: { params: { chatId: string 
     }
 
     // ✅ メッセージをデータベースに保存
-    const newMessage = await prisma.Message.create({
+    const newMessage = await prisma.message.create({
       data: {
         chatId,
         senderId,
