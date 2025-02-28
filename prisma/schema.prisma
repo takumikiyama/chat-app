@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +5,60 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String        @id @default(uuid())
+  name             String
+  email            String        @unique
+  password         String
+  bio              String?
+  createdAt        DateTime      @default(now())
+  chats1           Chat[]        @relation("ChatUser1")
+  chats2           Chat[]        @relation("ChatUser2")
+  matchedPairs1    MatchPair[]   @relation("MatchPairUser1")
+  matchedPairs2    MatchPair[]   @relation("MatchPairUser2")
+  receivedMessages SentMessage[] @relation("ReceivedMessages")
+  sentMessages     SentMessage[] @relation("SentMessages")
+  messagesSent     Message[]     @relation("UserMessages")
+}
+
+model SentMessage {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  message    String
+  createdAt  DateTime @default(now())
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model MatchPair {
+  id        String   @id @default(uuid())
+  user1Id   String
+  user2Id   String
+  message   String
+  matchedAt DateTime @default(now())
+  user1     User     @relation("MatchPairUser1", fields: [user1Id], references: [id])
+  user2     User     @relation("MatchPairUser2", fields: [user2Id], references: [id])
+}
+
+model Chat {
+  id       String    @id @default(uuid())
+  user1Id  String
+  user2Id  String
+  createdAt DateTime @default(now())
+  user1    User      @relation("ChatUser1", fields: [user1Id], references: [id])
+  user2    User      @relation("ChatUser2", fields: [user2Id], references: [id])
+  messages Message[]
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  sender    User     @relation("UserMessages", fields: [senderId], references: [id])
 }
