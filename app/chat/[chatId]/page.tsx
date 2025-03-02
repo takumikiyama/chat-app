@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
-import io, { Socket } from "socket.io-client";
+import socket from "@/app/socket"; // ✅ WebSocket クライアントをインポート
 
 type Message = {
   id: string;
@@ -13,14 +13,13 @@ type Message = {
   };
   content: string;
   createdAt: string;
-  formattedDate?: string; // フォーマット済みの日付
+  formattedDate?: string;
 };
 
 export default function Chat() {
   const { chatId } = useParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     if (!chatId) {
@@ -28,7 +27,7 @@ export default function Chat() {
       return;
     }
 
-    // メッセージの取得
+    // ✅ メッセージの取得
     const fetchMessages = async () => {
       try {
         const response = await axios.get(`/api/chat/${chatId}`);
@@ -50,37 +49,24 @@ export default function Chat() {
 
     fetchMessages();
 
-    // WebSocket の接続
-    const socketInstance: Socket = io("http://localhost:3001");
-    setSocket(socketInstance);
-
-    socketInstance.on("connect", () => {
-      console.log("✅ WebSocket に接続成功！", socketInstance.id);
+    // ✅ WebSocket の接続
+    socket.on("connect", () => {
+      console.log("✅ WebSocket に接続成功！", socket.id);
     });
 
-    // ✅ WebSocket で受信したメッセージをそのまま追加（重複チェックは不要）
-    socketInstance.on("receiveMessage", (message: Message) => {
-      const formattedMessage = {
-        ...message,
-        formattedDate: new Date(message.createdAt).toLocaleString("ja-JP", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages((prevMessages) => [...prevMessages, formattedMessage]);
+    socket.on("receiveMessage", (message: Message) => {
+      console.log("📩 WebSocket でメッセージ受信:", message);
+      setMessages((prevMessages) => [...prevMessages, message]);
     });
 
     return () => {
-      socketInstance.disconnect();
+      socket.off("receiveMessage");
     };
   }, [chatId]);
 
-  // メッセージの送信
+  // ✅ メッセージの送信
   const sendMessage = async () => {
-    if (!chatId || !socket) return;
+    if (!chatId) return;
 
     try {
       const userId = localStorage.getItem("userId");
@@ -104,23 +90,29 @@ export default function Chat() {
   };
 
   return (
-    <div>
-      <h1>チャット</h1>
-      <ul>
+    <div className="p-5">
+      <h1 className="text-2xl mb-4">チャット</h1>
+      <ul className="space-y-2">
         {messages.map((msg) => (
-          <li key={msg.id}>
+          <li key={msg.id} className="border p-3 rounded-lg">
             <strong>{msg.sender?.name || "不明なユーザー"}</strong>: {msg.content}
             <br />
-            <small>{msg.formattedDate}</small>
+            <small className="text-gray-500">{msg.formattedDate}</small>
           </li>
         ))}
       </ul>
-      <input
-        type="text"
-        value={newMessage}
-        onChange={(e) => setNewMessage(e.target.value)}
-      />
-      <button onClick={sendMessage}>送信</button>
+      <div className="mt-4 flex gap-2">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          className="border p-2 w-full"
+          placeholder="メッセージを入力..."
+        />
+        <button onClick={sendMessage} className="bg-blue-500 text-white p-2">
+          送信
+        </button>
+      </div>
     </div>
   );
 }

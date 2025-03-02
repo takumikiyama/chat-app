@@ -1,30 +1,12 @@
-import { Server } from "socket.io";
-import { createServer } from "http";
+import { io } from "socket.io-client";
 
-let io: Server | null = null;
+// ✅ WebSocket サーバーのURLを環境変数から取得（開発環境用のデフォルトを設定）
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "ws://localhost:3001";
 
-export function initSocket() {
-  if (!io) {
-    const httpServer = createServer();
-    io = new Server(httpServer, {
-      cors: {
-        origin: "*", // ✅ CORS の設定
-      },
-    });
+// ✅ WebSocket インスタンスを作成
+const socket = io(SOCKET_URL, {
+  withCredentials: true,
+  transports: ["websocket"],
+});
 
-    io.on("connection", (socket) => {
-      console.log("⚡️ ユーザーが接続しました");
-
-      socket.on("sendMessage", (message) => {
-        console.log("📩 新しいメッセージ:", message);
-        io?.emit("receiveMessage", message); // ✅ すべてのクライアントに送信
-      });
-
-      socket.on("disconnect", () => {
-        console.log("❌ ユーザーが切断しました");
-      });
-    });
-
-    httpServer.listen(3001, () => console.log("🚀 WebSocket サーバー起動 (ポート: 3001)"));
-  }
-}
+export default socket;
