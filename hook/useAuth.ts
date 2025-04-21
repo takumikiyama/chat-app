@@ -1,20 +1,27 @@
+// hook/useAuth.ts
+"use client";
+
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 interface User {
   name: string;
   email: string;
+  bio?: string;
 }
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
 
+      // トークンがなければログイン画面へ
       if (!token) {
-        setUser(null);
+        router.push("/login");
         return;
       }
 
@@ -23,15 +30,18 @@ export function useAuth() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data);
-      } catch (error) {
-        console.error("Authentication failed:", error);
+      } catch (err: unknown) {
+        console.error("Authentication failed:", err);
+
+        // トークン無効 or 期限切れならクリアしてログインへ
         localStorage.removeItem("token");
-        setUser(null);
+        localStorage.removeItem("userId");
+        router.push("/login");
       }
     };
 
     fetchUser();
-  }, []);
+  }, [router]);
 
   return user;
 }

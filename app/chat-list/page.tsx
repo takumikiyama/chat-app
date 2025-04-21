@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import socket from "@/app/socket";
 import FixedTabBar from "../components/FixedTabBar";
 
 // チャットリストアイテム型
@@ -26,7 +27,9 @@ function getInitials(name: string) {
 // 名前から背景色を決定する簡易ハッシュ
 function getBgColor(name: string) {
   let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
   const h = hash % 360;
   return `hsl(${h}, 70%, 80%)`;
 }
@@ -35,28 +38,96 @@ export default function ChatList() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatItem[]>([]);
 
-  // チャット一覧取得
+  // 通知の権限をリクエスト
   useEffect(() => {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
+    // ① API から初回チャット一覧を取得
     const fetchChats = async () => {
       const userId = localStorage.getItem("userId");
       if (!userId) return;
       try {
-        const res = await axios.get<ChatItem[]>('/api/chat-list', {
-          headers: { userId }
+        const res = await axios.get<ChatItem[]>("/api/chat-list", {
+          headers: { userId },
         });
-        // 日付フォーマット
         const formatted = res.data.map((c) => ({
           ...c,
           latestMessageAt: new Date(c.latestMessageAt).toLocaleString("ja-JP", {
-            hour: '2-digit', minute: '2-digit', month: '2-digit', day: '2-digit'
-          })
+            hour: "2-digit",
+            minute: "2-digit",
+            month: "2-digit",
+            day: "2-digit",
+          }),
         }));
         setChats(formatted);
       } catch (e) {
-        console.error('🚨 チャットリスト取得エラー:', e);
+        console.error("🚨 チャットリスト取得エラー:", e);
       }
     };
+
     fetchChats();
+
+    // ② 新着メッセージをリアルタイムに受信
+    socket.on("newMessage", (payload: { chatId: string; message: { content: string; createdAt: string; sender: { name: string } } }) => {
+      const { chatId: incomingChatId, message } = payload;
+
+      setChats((prev) => {
+        // 当該チャットの最新メッセージを更新
+        const updated = prev.map((chat) =>
+          chat.chatId === incomingChatId
+            ? {
+                ...chat,
+                latestMessage: message.content,
+                latestMessageAt: new Date(message.createdAt).toLocaleString("ja-JP", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  month: "2-digit",
+                  day: "2-digit",
+                }),
+              }
+            : chat
+        );
+        // 最新日時でソート（降順）
+        return updated.sort(
+          (a, b) =>
+            new Date(b.latestMessageAt).getTime() - new Date(a.latestMessageAt).getTime()
+        );
+      });
+
+      // ブラウザ通知
+      if (Notification.permission === "granted") {
+        new Notification("新着メッセージ", {
+          body: `${message.sender.name}: ${message.content}`,
+        });
+      }
+    });
+
+    // ③ マッチング成立をリアルタイムに受信
+    socket.on("matchEstablished", (data: { chatId: string; message: string; matchedAt: string }) => {
+      // マッチングが発生したら一覧を再取得して新規チャットを追加
+      fetchChats();
+
+      // ブラウザ通知
+      if (Notification.permission === "granted") {
+        new Notification("マッチング成立！", {
+          body: `「${data.message}」で ${new Date(data.matchedAt).toLocaleString("ja-JP", {
+            hour: "2-digit",
+            minute: "2-digit",
+            month: "2-digit",
+            day: "2-digit",
+          })} にマッチしました`,
+        });
+      }
+    });
+
+    return () => {
+      socket.off("newMessage");
+      socket.off("matchEstablished");
+    };
   }, []);
 
   return (
@@ -90,9 +161,7 @@ export default function ChatList() {
                       「{chat.matchMessage}」
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {chat.latestMessage}
-                  </div>
+                  <div className="text-sm text-gray-500">{chat.latestMessage}</div>
                 </div>
               </div>
             </li>

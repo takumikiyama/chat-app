@@ -1,34 +1,33 @@
-import { NextResponse } from "next/server";
+// app/api/match-message/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { io as ioClient } from "socket.io-client";
 
 const prisma = new PrismaClient();
+// WebSocket サーバーの URL を環境変数から取得
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { senderId, receiverIds, message } = await req.json();
 
-    if (!senderId || !receiverIds.length || !message) {
+    if (!senderId || !receiverIds?.length || !message) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
     let matchedUserId: string | null = null;
 
+    // 1) 送信メッセージを保存しつつ、マッチを探す
     for (const receiverId of receiverIds) {
-      // ✅ 送信メッセージをDBに保存
       await prisma.sentMessage.create({
-        data: {
-          senderId,
-          receiverId,
-          message,
-        },
+        data: { senderId, receiverId, message },
       });
 
-      // ✅ 相手が同じメッセージを送っているか確認
       const existingMatch = await prisma.sentMessage.findFirst({
         where: {
           senderId: receiverId,
           receiverId: senderId,
-          message, // ✅ 送信メッセージが一致するか確認
+          message,
         },
       });
 
@@ -38,10 +37,11 @@ export async function POST(req: Request) {
       }
     }
 
+    // 2) マッチ成立時の処理
     if (matchedUserId) {
       console.log(`🎉 マッチング成立！${senderId} ⇄ ${matchedUserId}`);
 
-      // ✅ `MatchPair` がすでに作成されているか確認
+      // -- MatchPair がなければ作成
       const existingMatchPair = await prisma.matchPair.findFirst({
         where: {
           OR: [
@@ -50,20 +50,17 @@ export async function POST(req: Request) {
           ],
         },
       });
+      const matchPair = existingMatchPair
+        ? existingMatchPair
+        : await prisma.matchPair.create({
+            data: { user1Id: senderId, user2Id: matchedUserId, message },
+            include: {
+              user1: { select: { id: true, name: true } },
+              user2: { select: { id: true, name: true } },
+            },
+          });
 
-      if (!existingMatchPair) {
-        await prisma.matchPair.create({
-          data: {
-            user1Id: senderId,
-            user2Id: matchedUserId,
-            message,
-          },
-        });
-
-        console.log("✅ MatchPair 作成");
-      }
-
-      // ✅ `Chat` がすでに存在するか確認
+      // -- Chat がなければ作成
       const existingChat = await prisma.chat.findFirst({
         where: {
           OR: [
@@ -72,21 +69,27 @@ export async function POST(req: Request) {
           ],
         },
       });
-
       if (!existingChat) {
         await prisma.chat.create({
-          data: {
-            user1Id: senderId,
-            user2Id: matchedUserId,
-          },
+          data: { user1Id: senderId, user2Id: matchedUserId },
         });
-
-        console.log("✅ Chat 作成");
       }
+
+      // 3) WebSocket サーバーへマッチ成立通知を emit
+      const socket = ioClient(SOCKET_URL, { transports: ["websocket"] });
+      socket.emit("matchEstablished", {
+        chatId: matchPair.id,
+        user1: matchPair.user1Id,
+        user2: matchPair.user2Id,
+        message: matchPair.message,
+        matchedAt: matchPair.matchedAt,
+      });
+      socket.disconnect();
 
       return NextResponse.json({ message: "Match created!" });
     }
 
+    // 4) マッチ未成立の場合
     return NextResponse.json({ message: "Message sent, waiting for a match!" });
   } catch (error) {
     console.error("🚨 マッチングエラー:", error);

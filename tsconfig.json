@@ -1,5 +1,12 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "resolvePackageJsonExports": false,
+    "typeRoots": ["types", "node_modules/@types"],
+    "moduleResolution": "bundler",
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -8,7 +15,6 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -17,11 +23,8 @@
       {
         "name": "next"
       }
-    ],
-    "paths": {
-      "@/*": ["./*"]
-    }
+    ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "types/global.d.ts", "types/next-pwa.d.ts", ".next/types/**/*.ts","app", "pages"],
   "exclude": ["node_modules"]
 }

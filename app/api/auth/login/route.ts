@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
     console.log("🔹 ログインリクエスト:", { email, password });
@@ -45,12 +45,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "ログインに失敗しました" }, { status: 500 });
   }
 }
-
-fetch("/api/auth/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email: "test@example.com", password: "yourpassword" }),
-})
-  .then(res => res.json())
-  .then(data => console.log(data))
-  .catch(err => console.error(err));
