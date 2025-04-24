@@ -4,27 +4,25 @@ import { PrismaClient } from "@prisma/client";
 import { io as ioClient } from "socket.io-client";
 
 const prisma = new PrismaClient();
-// ブラウザ／API 両方から参照できるように next.config.js で公開している前提です
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
 
 /**
  * GET /api/chat/[chatId]
- * ─────────────────────
- * URL の第二引数で渡される params.chatId を使います
+ * → URL をパースして chatId を取り出す
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { chatId: string } }
-) {
-  const { chatId } = params;
-  if (!chatId) {
-    return NextResponse.json(
-      { error: "Chat ID が指定されていません" },
-      { status: 400 }
-    );
-  }
-
+export async function GET(req: NextRequest) {
   try {
+    const { pathname } = new URL(req.url);
+    const segments = pathname.split("/"); 
+    const chatId = segments[segments.length - 1]; 
+
+    if (!chatId) {
+      return NextResponse.json(
+        { error: "Chat ID が指定されていません" },
+        { status: 400 }
+      );
+    }
+
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
       include: {
@@ -42,7 +40,6 @@ export async function GET(
       );
     }
 
-    // そのままメッセージ一覧を返却
     return NextResponse.json(chat.messages);
   } catch (error) {
     console.error("🚨 チャット取得エラー:", error);
@@ -55,18 +52,17 @@ export async function GET(
 
 /**
  * POST /api/chat/[chatId]
- * ─────────────────────
- * 保存後に sendMessage を emit  → WebSocket サーバーが newMessage として全クライアントに broadcast
+ * → 同様に URL から chatId を取得し、
+ *    DB 保存後に WebSocket 経由で broadcast
  */
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: { chatId: string } }
-) {
-  const { chatId } = params;
+export async function POST(req: NextRequest) {
   try {
-    const { senderId, content } = await _req.json();
+    const { pathname } = new URL(req.url);
+    const segments = pathname.split("/");
+    const chatId = segments[segments.length - 1];
 
-    // バリデーション
+    const { senderId, content } = await req.json();
+
     if (!chatId || !senderId || !content) {
       return NextResponse.json(
         { error: "chatId, senderId, content はすべて必須です" },
@@ -74,7 +70,6 @@ export async function POST(
       );
     }
 
-    // チャット存在確認
     const chat = await prisma.chat.findUnique({ where: { id: chatId } });
     if (!chat) {
       return NextResponse.json(
@@ -83,18 +78,14 @@ export async function POST(
       );
     }
 
-    // メッセージを保存
     const newMessage = await prisma.message.create({
       data: { chatId, senderId, content },
       include: { sender: { select: { id: true, name: true } } },
     });
 
-    // WebSocket サーバーに送信
+    // WebSocket サーバーへ送信
     const socket = ioClient(SOCKET_URL, { transports: ["websocket"] });
-    socket.emit("sendMessage", {
-      chatId,
-      message: newMessage,
-    });
+    socket.emit("sendMessage", { chatId, message: newMessage });
     socket.disconnect();
 
     return NextResponse.json(newMessage);
