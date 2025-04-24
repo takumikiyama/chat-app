@@ -13,7 +13,7 @@ io.on("connection", (socket) => {
 
   socket.on("sendMessage", (message) => {
     console.log("📩 新しいメッセージ:", message);
-    io.emit("receiveMessage", message); // ✅ すべてのクライアントに送信
+    io.emit("newMessage", message); // ✅ すべてのクライアントに送信
   });
 
   socket.on("disconnect", () => {
