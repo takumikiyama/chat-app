@@ -9,16 +9,39 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // トークン or userId を見て認証判定
     const token = localStorage.getItem("token");
-    if (token) {
-      router.replace("/main");   // ログイン済み → メイン画面へ
-    } else {
-      router.replace("/login");  // 未ログイン → ログイン画面へ
+    const userId = localStorage.getItem("userId");
+
+    // トークン／userId が無ければ即ログイン画面へ
+    if (!token || !userId) {
+      router.replace("/login");
+      return;
     }
+
+    // トークンの有効性をサーバーへ問い合わせ
+    fetch("/api/auth/profile", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) {
+          // 有効 → メイン画面へ
+          router.replace("/main");
+        } else {
+          // 無効／期限切れ → localStorage クリアしてログインへ
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          router.replace("/login");
+        }
+      })
+      .catch(() => {
+        // ネットワークエラー等もログイン画面へ
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        router.replace("/login");
+      });
   }, [router]);
 
-  // リダイレクトが走るまでアイコンだけ表示
   return (
     <div className="flex items-center justify-center h-screen bg-white">
       <Image

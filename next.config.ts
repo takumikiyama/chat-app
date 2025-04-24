@@ -2,13 +2,12 @@
 import withPWA from "next-pwa";
 import type { NextConfig } from "next";
 
-const isProd = process.env.VERCEL_ENV === "production" && process.env.NODE_ENV === "production";
 
 const pwaOptions = {
   dest: "public",
-  register: isProd,
-  skipWaiting: isProd,
-  disable: !isProd,
+  register: true,
+  skipWaiting: true,
+  disable: false,
   fallbacks: {
     document: "/offline.html",
   },

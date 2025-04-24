@@ -39,6 +39,7 @@ export default function ChatList() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatItem[]>([]);
 
+
   // 1) API から初回チャット一覧を取得し、日時をフォーマットして state にセット
   const fetchChats = async () => {
     const userId = localStorage.getItem("userId");

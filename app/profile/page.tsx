@@ -50,6 +50,9 @@ export default function Profile() {
         setName(res.data.name);
         setBio(res.data.bio || "");
       } catch {
+        // 期限切れ or 無効トークンならクリアしてログイン画面へ
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
         router.push("/login");
       }
     };

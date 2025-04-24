@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ✅ JWT を作成し、ユーザーIDを含める
-    const token = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, { expiresIn: "10d" });
 
     console.log("✅ JWT 発行:", token);
     console.log("✅ userId を返す:", user.id);
