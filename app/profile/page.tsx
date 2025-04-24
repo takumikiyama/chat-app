@@ -88,7 +88,7 @@ export default function Profile() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <div className="flex-1 overflow-y-auto p-5 pb-20 max-w-md mx-auto">
-        <h1 className="text-2xl font-bold text-center mb-4">プロフィール</h1>
+        <h2 className="text-2xl font-bold text-center mb-4">Profile</h2>
         {showSavedPopup && (
           <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-black text-white px-4 py-2 rounded-full z-50">
             変更を保存しました

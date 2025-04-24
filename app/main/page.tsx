@@ -9,6 +9,7 @@ import FixedTabBar from "../components/FixedTabBar";
 interface User {
   id: string;
   name: string;
+  bio: string;
 }
 
 const MESSAGES = [
@@ -48,6 +49,7 @@ export default function Main() {
   const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [matchCount, setMatchCount] = useState(0);
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [isSent, setIsSent] = useState(false);
@@ -56,11 +58,24 @@ export default function Main() {
     setCurrentUserId(localStorage.getItem("userId"));
   }, []);
 
+  // ユーザー一覧の取得
   useEffect(() => {
     axios
       .get<User[]>("/api/users")
       .then((res) => setUsers(res.data))
       .catch((e) => console.error("ユーザー取得エラー:", e));
+  }, []);
+
+  // 受信マッチメッセージ件数の取得
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+    axios
+      .get<{ count: number }>("/api/match-message/count", {
+        headers: { userId },
+      })
+      .then((res) => setMatchCount(res.data.count))
+      .catch((e) => console.error("件数取得エラー:", e));
   }, []);
 
   const handleSend = async () => {
@@ -79,9 +94,15 @@ export default function Main() {
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       setIsSent(true);
       setTimeout(() => setIsSent(false), 3000);
-
       setSelectedMessage(null);
       setSelectedRecipientIds([]);
+      // 送信後に再取得（自分宛件数が減るケースがあるなら）
+      axios
+        .get<{ count: number }>("/api/match-message/count", {
+          headers: { userId: currentUserId },
+        })
+        .then((res) => setMatchCount(res.data.count))
+        .catch(() => {});
     } catch (error) {
       console.error("送信エラー:", error);
       alert("メッセージの送信に失敗しました");
@@ -110,10 +131,14 @@ export default function Main() {
         <p className="text-sm text-gray-600 text-center leading-snug mt-2">
           A chat begins when you both send the same message.
         </p>
+        {/* ← 受信マッチメッセージ件数 */}
+        <p className="text-sm text-gray-500 text-center mt-1">
+          You have received <span className="font-semibold">{matchCount}</span> messages so far
+        </p>
       </div>
 
       {/* 送信待機バー */}
-      <div className="fixed top-[95px] left-1/2 transform -translate-x-1/2 bg-white/30 backdrop-blur-md rounded-full shadow-xl flex w-[95%] max-w-[600px] px-5 py-2 z-10">
+      <div className="fixed top-[115px] left-1/2 transform -translate-x-1/2 bg-white/30 backdrop-blur-md rounded-full shadow-xl flex w-[95%] max-w-[600px] px-5 py-2 z-10">
         <div className="flex-1 pr-32 flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
           {selectedMessage ? (
             <span
@@ -149,7 +174,7 @@ export default function Main() {
       {/* 本文：2カラム */}
       <div className="mt-[165px] flex flex-1 overflow-hidden">
         {/* メッセージ選択 */}
-        <div className="w-2/5 overflow-y-auto p-4 space-y-2">
+        <div className="w-2/5 overflow-y-auto p-4 space-y-2 pb-24">
           {MESSAGES.map((msg) => (
             <button
               key={msg}
@@ -166,7 +191,7 @@ export default function Main() {
         </div>
 
         {/* 送信先リスト */}
-        <div className="w-3/5 overflow-y-auto p-4 space-y-2">
+        <div className="w-3/5 overflow-y-auto p-4 space-y-2 pb-24">
           {users
             .filter((u) => u.id !== currentUserId)
             .map((u) => (
@@ -181,11 +206,15 @@ export default function Main() {
                 >
                   {getInitials(u.name)}
                 </div>
-                <span
-                  className={`text-lg ${selectedRecipientIds.includes(u.id) ? "font-bold" : ""}`}
-                >
-                  {u.name}
-                </span>
+                <div className="flex-1">
+                  <span
+                    className={`text-lg ${selectedRecipientIds.includes(u.id) ? "font-bold" : ""}`}
+                  >
+                    {u.name}
+                  </span>
+                  {/* ← bio を小さくグレーで表示 */}
+                  <p className="text-sm text-gray-500 truncate">{u.bio || "自己紹介未設定"}</p>
+                </div>
                 {selectedRecipientIds.includes(u.id) && (
                   <Image src="/icons/check.png" alt="Selected" width={20} height={20} />
                 )}
