@@ -2,12 +2,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { io as ioClient } from "socket.io-client";
 
 // Prisma クライアントを初期化
 const prisma = new PrismaClient();
 // WebSocket サーバーの URL を環境変数から取得
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
 
 /**
  * GET /api/chat/[chatId]
@@ -91,19 +89,6 @@ export async function POST(req: NextRequest) {
       data: { chatId, senderId, content },
       include: { sender: { select: { id: true, name: true } } },
     });
-
-    // WebSocket サーバーへ通知を emit
-    const socket = ioClient(SOCKET_URL, { transports: ["websocket"] });
-    socket.emit("newMessage", {
-      chatId,
-      message: {
-        id: newMessage.id,
-        sender: newMessage.sender,
-        content: newMessage.content,
-        createdAt: newMessage.createdAt,
-      },
-    });
-    socket.disconnect();
 
     return NextResponse.json(newMessage);
   } catch (error) {

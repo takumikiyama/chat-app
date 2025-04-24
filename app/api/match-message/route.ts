@@ -1,11 +1,8 @@
 // app/api/match-message/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { io as ioClient } from "socket.io-client";
 
 const prisma = new PrismaClient();
-// WebSocket サーバーの URL を環境変数から取得
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +19,6 @@ export async function POST(req: NextRequest) {
       await prisma.sentMessage.create({
         data: { senderId, receiverId, message },
       });
-
       const existingMatch = await prisma.sentMessage.findFirst({
         where: {
           senderId: receiverId,
@@ -30,7 +26,6 @@ export async function POST(req: NextRequest) {
           message,
         },
       });
-
       if (existingMatch) {
         matchedUserId = receiverId;
         break;
@@ -39,9 +34,7 @@ export async function POST(req: NextRequest) {
 
     // 2) マッチ成立時の処理
     if (matchedUserId) {
-      console.log(`🎉 マッチング成立！${senderId} ⇄ ${matchedUserId}`);
-
-      // -- MatchPair がなければ作成
+      // MatchPair 作成 if needed
       const existingMatchPair = await prisma.matchPair.findFirst({
         where: {
           OR: [
@@ -50,17 +43,13 @@ export async function POST(req: NextRequest) {
           ],
         },
       });
-      const matchPair = existingMatchPair
-        ? existingMatchPair
-        : await prisma.matchPair.create({
-            data: { user1Id: senderId, user2Id: matchedUserId, message },
-            include: {
-              user1: { select: { id: true, name: true } },
-              user2: { select: { id: true, name: true } },
-            },
-          });
+      if (!existingMatchPair) {
+        await prisma.matchPair.create({
+          data: { user1Id: senderId, user2Id: matchedUserId, message },
+        });
+      }
 
-      // -- Chat がなければ作成
+      // Chat 作成 if needed
       const existingChat = await prisma.chat.findFirst({
         where: {
           OR: [
@@ -75,16 +64,8 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // 3) WebSocket サーバーへマッチ成立通知を emit
-      const socket = ioClient(SOCKET_URL, { transports: ["websocket"] });
-      socket.emit("matchEstablished", {
-        chatId: matchPair.id,
-        user1: matchPair.user1Id,
-        user2: matchPair.user2Id,
-        message: matchPair.message,
-        matchedAt: matchPair.matchedAt,
-      });
-      socket.disconnect();
+      // ※ プッシュ通知はここでは行わず、
+      //    別途 /api/push-match などで実装予定
 
       return NextResponse.json({ message: "Match created!" });
     }

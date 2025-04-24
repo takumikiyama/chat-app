@@ -1,3 +1,4 @@
+// app/chat/[chatId]/page.tsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -6,7 +7,8 @@ import axios from "axios";
 import socket from "@/app/socket";
 import Image from "next/image";
 
-// 名前からイニシャルを生成
+// ————————————————
+// ヘルパー：ユーザー名からイニシャルを生成
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -15,7 +17,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-// 名前から背景色を決定する簡易ハッシュ
+// ヘルパー：ユーザー名から背景色をハッシュ的に決定
 function getBgColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -42,20 +44,20 @@ export default function Chat() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // ログインユーザーIDを取得
+  // 1) ログインユーザーIDを localStorage から取得
   useEffect(() => {
     setCurrentUserId(localStorage.getItem("userId"));
   }, []);
 
-  // 初期メッセージ取得＋ソケット各種イベント登録
+  // 2) 初回メッセージ取得＋Socket.IO の UI 更新だけ登録
   useEffect(() => {
     if (!chatId) return;
 
-    // 1) REST で過去メッセージを取得
-    const fetchMessages = async () => {
+    // REST 経由で過去メッセージを取得
+    (async () => {
       try {
-        const res = await axios.get(`/api/chat/${chatId}`);
-        const fetched: Message[] = res.data.map((msg: Message) => ({
+        const res = await axios.get<Message[]>(`/api/chat/${chatId}`);
+        const formatted = res.data.map((msg) => ({
           ...msg,
           formattedDate: new Date(msg.createdAt).toLocaleString("ja-JP", {
             hour: "2-digit",
@@ -64,64 +66,31 @@ export default function Chat() {
             day: "2-digit",
           }),
         }));
-        setMessages(fetched);
+        setMessages(formatted);
       } catch (e) {
         console.error("🚨 メッセージ取得エラー:", e);
       }
-    };
-    fetchMessages();
+    })();
 
-    // 2) Notification の権限を要求
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
-
-    // 3) ソケットで新着メッセージを受信
+    // Socket.IO でリアルタイムに受信したメッセージを UI に追加
     socket.on("receiveMessage", (message: Message) => {
       const formatted: Message = {
         ...message,
-        formattedDate: new Date(message.createdAt).toLocaleTimeString("ja-JP", {
+        formattedDate: new Date(message.createdAt).toLocaleString("ja-JP", {
           hour: "2-digit",
           minute: "2-digit",
         }),
       };
       setMessages((prev) => [...prev, formatted]);
-
-      // ブラウザ通知（自分以外からのメッセージのみ）
-      if (
-        message.sender.id !== currentUserId &&
-        Notification.permission === "granted"
-      ) {
-        new Notification(`新しいメッセージ: ${message.sender.name}`, {
-          body: message.content,
-        });
-      }
     });
 
-    // 4) ソケットでマッチング成立を受信
-    socket.on(
-      "matchEstablished",
-      (data: {
-        chatId: string;
-        message: string;
-        matchedAt: string;
-      }) => {
-        // このチャットルームのマッチなら通知
-        if (data.chatId === chatId && Notification.permission === "granted") {
-          new Notification("マッチング成立！", {
-            body: `「${data.message}」で ${data.matchedAt} にマッチしました`,
-          });
-        }
-      }
-    );
-
+    // クリーンアップ
     return () => {
       socket.off("receiveMessage");
-      socket.off("matchEstablished");
     };
-  }, [chatId, currentUserId]);
+  }, [chatId]);
 
-  // メッセージ送信
+  // 3) メッセージ送信ハンドラ
   const handleSend = async () => {
     if (!chatId || !newMessage.trim()) return;
     const senderId = localStorage.getItem("userId");
@@ -130,27 +99,26 @@ export default function Chat() {
       return;
     }
     try {
-      const res = await axios.post(`/api/chat/${chatId}`, {
+      const res = await axios.post<Message>(`/api/chat/${chatId}`, {
         senderId,
         content: newMessage,
       });
-      const msg: Message = { ...res.data };
-      // ソケット送信
+      const msg = res.data;
+      // Socket.IO で全クライアントに配信（UI 更新用）
       socket.emit("sendMessage", msg);
       setNewMessage("");
-      // フォーカスを戻す
       inputRef.current?.focus();
     } catch (e) {
       console.error("🚨 送信エラー:", e);
     }
   };
 
-  // 自動スクロール
+  // 4) 新着メッセージ時に自動でスクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // チャット相手名を取得（最初のメッセージ送信者）
+  // 5) チャット相手の名前（最初に自分以外が送ったメッセージの送信者）
   const partner = messages.find((m) => m.sender.id !== currentUserId);
   const partnerName = partner?.sender.name || "チャット";
 
@@ -158,10 +126,7 @@ export default function Chat() {
     <div className="relative bg-white h-screen">
       {/* ヘッダー */}
       <div className="fixed top-0 left-0 right-0 bg-white flex items-center justify-center px-4 py-2 shadow">
-        <button
-          onClick={() => router.push("/chat-list")}
-          className="absolute left-4"
-        >
+        <button onClick={() => router.push("/chat-list")} className="absolute left-4">
           <Image src="/icons/back.png" alt="Back" width={24} height={24} />
         </button>
         <h1 className="text-lg font-bold">{partnerName}</h1>
@@ -178,10 +143,9 @@ export default function Chat() {
             return (
               <div
                 key={msg.id}
-                className={`flex items-end ${
-                  isMe ? "justify-end" : "justify-start"
-                }`}
+                className={`flex items-end ${isMe ? "justify-end" : "justify-start"}`}
               >
+                {/* 他者のバブルにはアイコン */}
                 {!isMe && (
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white mr-2"
@@ -191,11 +155,9 @@ export default function Chat() {
                   </div>
                 )}
                 <div className="flex items-end gap-2">
-                  {isMe && (
-                    <span className="text-xs text-gray-400">
-                      {msg.formattedDate}
-                    </span>
-                  )}
+                  {/* 時刻 */}
+                  {isMe && <span className="text-xs text-gray-400">{msg.formattedDate}</span>}
+                  {/* メッセージバブル */}
                   <div
                     className={`relative max-w-xs px-3 py-2 text-sm text-black rounded-lg shadow ${
                       isMe ? "bg-blue-100 bubble-right" : "bg-gray-100 bubble-left"
@@ -203,11 +165,7 @@ export default function Chat() {
                   >
                     {msg.content}
                   </div>
-                  {!isMe && (
-                    <span className="text-xs text-gray-400">
-                      {msg.formattedDate}
-                    </span>
-                  )}
+                  {!isMe && <span className="text-xs text-gray-400">{msg.formattedDate}</span>}
                 </div>
               </div>
             );
@@ -217,10 +175,7 @@ export default function Chat() {
       </div>
 
       {/* 入力欄 */}
-      <div
-        className="fixed left-0 right-0 bg-white px-4 py-2 shadow"
-        style={{ bottom: 0 }}
-      >
+      <div className="fixed left-0 right-0 bg-white px-4 py-2 shadow" style={{ bottom: 0 }}>
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}

@@ -1,3 +1,4 @@
+// app/chat-list/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,7 +13,7 @@ interface ChatItem {
   matchedUser: { id: string; name: string };
   matchMessage: string;
   latestMessage: string;
-  latestMessageAt: string;
+  latestMessageAt: string; // フォーマット済み日時文字列
 }
 
 // 名前からイニシャルを生成
@@ -38,90 +39,77 @@ export default function ChatList() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatItem[]>([]);
 
-  // 通知の権限をリクエスト
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  useEffect(() => {
-    // ① API から初回チャット一覧を取得
-    const fetchChats = async () => {
-      const userId = localStorage.getItem("userId");
-      if (!userId) return;
-      try {
-        const res = await axios.get<ChatItem[]>("/api/chat-list", {
-          headers: { userId },
-        });
-        const formatted = res.data.map((c) => ({
+  // API からチャット一覧を取得し、日時をフォーマットして state にセット
+  const fetchChats = async () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+    try {
+      const res = await axios.get<ChatItem[]>("/api/chat-list", {
+        headers: { userId },
+      });
+      const formatted = res.data
+        .map((c) => ({
           ...c,
           latestMessageAt: new Date(c.latestMessageAt).toLocaleString("ja-JP", {
-            hour: "2-digit",
-            minute: "2-digit",
             month: "2-digit",
             day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
           }),
-        }));
-        setChats(formatted);
-      } catch (e) {
-        console.error("🚨 チャットリスト取得エラー:", e);
-      }
-    };
+        }))
+        // 降順ソート
+        .sort(
+          (a, b) =>
+            new Date(b.latestMessageAt).getTime() -
+            new Date(a.latestMessageAt).getTime()
+        );
+      setChats(formatted);
+    } catch (e) {
+      console.error("🚨 チャットリスト取得エラー:", e);
+    }
+  };
 
+  useEffect(() => {
+    // 初回取得
     fetchChats();
 
-    // ② 新着メッセージをリアルタイムに受信
-    socket.on("newMessage", (payload: { chatId: string; message: { content: string; createdAt: string; sender: { name: string } } }) => {
-      const { chatId: incomingChatId, message } = payload;
-
-      setChats((prev) => {
-        // 当該チャットの最新メッセージを更新
-        const updated = prev.map((chat) =>
-          chat.chatId === incomingChatId
-            ? {
-                ...chat,
-                latestMessage: message.content,
-                latestMessageAt: new Date(message.createdAt).toLocaleString("ja-JP", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  month: "2-digit",
-                  day: "2-digit",
-                }),
-              }
-            : chat
-        );
-        // 最新日時でソート（降順）
-        return updated.sort(
-          (a, b) =>
-            new Date(b.latestMessageAt).getTime() - new Date(a.latestMessageAt).getTime()
-        );
-      });
-
-      // ブラウザ通知
-      if (Notification.permission === "granted") {
-        new Notification("新着メッセージ", {
-          body: `${message.sender.name}: ${message.content}`,
+    // 新着メッセージをリアルタイムに受信して当該チャットを更新
+    socket.on(
+      "newMessage",
+      (payload: {
+        chatId: string;
+        message: { content: string; createdAt: string; sender: { name: string } };
+      }) => {
+        setChats((prev) => {
+          const updated = prev.map((chat) =>
+            chat.chatId === payload.chatId
+              ? {
+                  ...chat,
+                  latestMessage: payload.message.content,
+                  latestMessageAt: new Date(
+                    payload.message.createdAt
+                  ).toLocaleString("ja-JP", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                }
+              : chat
+          );
+          // 最新日時でソートし直す
+          return updated.sort(
+            (a, b) =>
+              new Date(b.latestMessageAt).getTime() -
+              new Date(a.latestMessageAt).getTime()
+          );
         });
       }
-    });
+    );
 
-    // ③ マッチング成立をリアルタイムに受信
-    socket.on("matchEstablished", (data: { chatId: string; message: string; matchedAt: string }) => {
-      // マッチングが発生したら一覧を再取得して新規チャットを追加
+    // マッチング成立があれば新規チャットが追加され得るので再取得
+    socket.on("matchEstablished", () => {
       fetchChats();
-
-      // ブラウザ通知
-      if (Notification.permission === "granted") {
-        new Notification("マッチング成立！", {
-          body: `「${data.message}」で ${new Date(data.matchedAt).toLocaleString("ja-JP", {
-            hour: "2-digit",
-            minute: "2-digit",
-            month: "2-digit",
-            day: "2-digit",
-          })} にマッチしました`,
-        });
-      }
     });
 
     return () => {
@@ -161,7 +149,9 @@ export default function ChatList() {
                       「{chat.matchMessage}」
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500">{chat.latestMessage}</div>
+                  <div className="text-sm text-gray-500">
+                    {chat.latestMessage}
+                  </div>
                 </div>
               </div>
             </li>
