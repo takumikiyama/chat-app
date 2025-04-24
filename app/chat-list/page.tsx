@@ -39,7 +39,7 @@ export default function ChatList() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatItem[]>([]);
 
-  // API からチャット一覧を取得し、日時をフォーマットして state にセット
+  // 1) API から初回チャット一覧を取得し、日時をフォーマットして state にセット
   const fetchChats = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
@@ -57,7 +57,7 @@ export default function ChatList() {
             minute: "2-digit",
           }),
         }))
-        // 降順ソート
+        // 降順ソート（新しいものが上）
         .sort(
           (a, b) =>
             new Date(b.latestMessageAt).getTime() -
@@ -73,48 +73,47 @@ export default function ChatList() {
     // 初回取得
     fetchChats();
 
-    // 新着メッセージをリアルタイムに受信して当該チャットを更新
-    socket.on(
-      "newMessage",
-      (payload: {
-        chatId: string;
-        message: { content: string; createdAt: string; sender: { name: string } };
-      }) => {
-        setChats((prev) => {
-          const updated = prev.map((chat) =>
-            chat.chatId === payload.chatId
-              ? {
-                  ...chat,
-                  latestMessage: payload.message.content,
-                  latestMessageAt: new Date(
-                    payload.message.createdAt
-                  ).toLocaleString("ja-JP", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }),
-                }
-              : chat
-          );
-          // 最新日時でソートし直す
-          return updated.sort(
-            (a, b) =>
-              new Date(b.latestMessageAt).getTime() -
-              new Date(a.latestMessageAt).getTime()
-          );
-        });
-      }
-    );
+    // 2) 新着メッセージをリアルタイムに受信し、該当チャットのみ更新
+    const handleNewMessage = (payload: {
+      chatId: string;
+      message: { content: string; createdAt: string; sender: { name: string } };
+    }) => {
+      setChats((prev) => {
+        const updated = prev.map((chat) =>
+          chat.chatId === payload.chatId
+            ? {
+                ...chat,
+                latestMessage: payload.message.content,
+                latestMessageAt: new Date(
+                  payload.message.createdAt
+                ).toLocaleString("ja-JP", {
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              }
+            : chat
+        );
+        return updated.sort(
+          (a, b) =>
+            new Date(b.latestMessageAt).getTime() -
+            new Date(a.latestMessageAt).getTime()
+        );
+      });
+    };
+    socket.on("newMessage", handleNewMessage);
 
-    // マッチング成立があれば新規チャットが追加され得るので再取得
-    socket.on("matchEstablished", () => {
+    // 3) マッチ成立時は新規チャットが追加される可能性があるので一覧を再取得
+    const handleNewMatch = () => {
       fetchChats();
-    });
+    };
+    socket.on("newMatch", handleNewMatch);
 
+    // クリーンアップ
     return () => {
-      socket.off("newMessage");
-      socket.off("matchEstablished");
+      socket.off("newMessage", handleNewMessage);
+      socket.off("newMatch", handleNewMatch);
     };
   }, []);
 
@@ -133,7 +132,6 @@ export default function ChatList() {
                 {chat.latestMessageAt}
               </span>
               <div className="flex items-center gap-3">
-                {/* 動的イニシャルアイコン */}
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
                   style={{ backgroundColor: getBgColor(chat.matchedUser.name) }}

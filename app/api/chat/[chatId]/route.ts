@@ -1,40 +1,36 @@
 // app/api/chat/[chatId]/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { io as ioClient } from "socket.io-client";
 
-// Prisma クライアントを初期化
 const prisma = new PrismaClient();
-// WebSocket サーバーの URL を環境変数から取得
+// ブラウザ／API 両方から参照できるように next.config.js で公開している前提です
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
 
 /**
  * GET /api/chat/[chatId]
- * 指定された chatId のメッセージ一覧を取得して返す
+ * ─────────────────────
+ * URL の第二引数で渡される params.chatId を使います
  */
-export async function GET(req: NextRequest) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { chatId: string } }
+) {
+  const { chatId } = params;
+  if (!chatId) {
+    return NextResponse.json(
+      { error: "Chat ID が指定されていません" },
+      { status: 400 }
+    );
+  }
+
   try {
-    // req.url はフル URL
-    const url = new URL(req.url);
-    // パスを "/" で分割して最後の要素を chatId とする
-    const segments = url.pathname.split("/");
-    const chatId = segments[segments.length - 1];
-
-    if (!chatId) {
-      return NextResponse.json(
-        { error: "Chat ID が指定されていません" },
-        { status: 400 }
-      );
-    }
-
-    // 指定チャットのメッセージを取得
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
       include: {
         messages: {
           orderBy: { createdAt: "asc" },
-          include: {
-            sender: { select: { id: true, name: true } },
-          },
+          include: { sender: { select: { id: true, name: true } } },
         },
       },
     });
@@ -46,6 +42,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // そのままメッセージ一覧を返却
     return NextResponse.json(chat.messages);
   } catch (error) {
     console.error("🚨 チャット取得エラー:", error);
@@ -58,16 +55,18 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/chat/[chatId]
- * 新しいメッセージを保存し、WebSocket でリアルタイム通知
+ * ─────────────────────
+ * 保存後に sendMessage を emit  → WebSocket サーバーが newMessage として全クライアントに broadcast
  */
-export async function POST(req: NextRequest) {
+export async function POST(
+  _req: NextRequest,
+  { params }: { params: { chatId: string } }
+) {
+  const { chatId } = params;
   try {
-    const url = new URL(req.url);
-    const segments = url.pathname.split("/");
-    const chatId = segments[segments.length - 1];
+    const { senderId, content } = await _req.json();
 
-    const { senderId, content } = await req.json();
-
+    // バリデーション
     if (!chatId || !senderId || !content) {
       return NextResponse.json(
         { error: "chatId, senderId, content はすべて必須です" },
@@ -89,6 +88,14 @@ export async function POST(req: NextRequest) {
       data: { chatId, senderId, content },
       include: { sender: { select: { id: true, name: true } } },
     });
+
+    // WebSocket サーバーに送信
+    const socket = ioClient(SOCKET_URL, { transports: ["websocket"] });
+    socket.emit("sendMessage", {
+      chatId,
+      message: newMessage,
+    });
+    socket.disconnect();
 
     return NextResponse.json(newMessage);
   } catch (error) {

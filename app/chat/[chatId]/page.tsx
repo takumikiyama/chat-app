@@ -44,16 +44,16 @@ export default function Chat() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // 1) ログインユーザーIDを localStorage から取得
+  // 1) ログインユーザーIDを取得
   useEffect(() => {
     setCurrentUserId(localStorage.getItem("userId"));
   }, []);
 
-  // 2) 初回メッセージ取得＋Socket.IO の UI 更新だけ登録
+  // 2) 過去メッセージ取得＋WebSocket ルーム参加＋リアルタイム受信登録
   useEffect(() => {
     if (!chatId) return;
 
-    // REST 経由で過去メッセージを取得
+    // REST API で過去メッセージを取得
     (async () => {
       try {
         const res = await axios.get<Message[]>(`/api/chat/${chatId}`);
@@ -72,25 +72,34 @@ export default function Chat() {
       }
     })();
 
-    // Socket.IO でリアルタイムに受信したメッセージを UI に追加
-    socket.on("receiveMessage", (message: Message) => {
+    // ルーム参加
+    socket.emit("joinChat", chatId);
+
+    // 新着メッセージ受信ハンドラ
+    const handleNewMessage = (payload: {
+      chatId: string;
+      message: Message;
+    }) => {
+      if (payload.chatId !== chatId) return; // 他ルームには流さない
+      const { message } = payload;
       const formatted: Message = {
         ...message,
-        formattedDate: new Date(message.createdAt).toLocaleString("ja-JP", {
+        formattedDate: new Date(message.createdAt).toLocaleTimeString("ja-JP", {
           hour: "2-digit",
           minute: "2-digit",
         }),
       };
       setMessages((prev) => [...prev, formatted]);
-    });
+    };
 
-    // クリーンアップ
+    socket.on("newMessage", handleNewMessage);
+
     return () => {
-      socket.off("receiveMessage");
+      socket.off("newMessage", handleNewMessage);
     };
   }, [chatId]);
 
-  // 3) メッセージ送信ハンドラ
+  // 3) メッセージ送信
   const handleSend = async () => {
     if (!chatId || !newMessage.trim()) return;
     const senderId = localStorage.getItem("userId");
@@ -104,8 +113,8 @@ export default function Chat() {
         content: newMessage,
       });
       const msg = res.data;
-      // Socket.IO で全クライアントに配信（UI 更新用）
-      socket.emit("sendMessage", msg);
+      // サーバーへ送信（ルームブロードキャスト）
+      socket.emit("sendMessage", { chatId, message: msg });
       setNewMessage("");
       inputRef.current?.focus();
     } catch (e) {
@@ -113,12 +122,12 @@ export default function Chat() {
     }
   };
 
-  // 4) 新着メッセージ時に自動でスクロール
+  // 4) 自動スクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 5) チャット相手の名前（最初に自分以外が送ったメッセージの送信者）
+  // 5) チャット相手の名前取得
   const partner = messages.find((m) => m.sender.id !== currentUserId);
   const partnerName = partner?.sender.name || "チャット";
 
@@ -126,7 +135,10 @@ export default function Chat() {
     <div className="relative bg-white h-screen">
       {/* ヘッダー */}
       <div className="fixed top-0 left-0 right-0 bg-white flex items-center justify-center px-4 py-2 shadow">
-        <button onClick={() => router.push("/chat-list")} className="absolute left-4">
+        <button
+          onClick={() => router.push("/chat-list")}
+          className="absolute left-4"
+        >
           <Image src="/icons/back.png" alt="Back" width={24} height={24} />
         </button>
         <h1 className="text-lg font-bold">{partnerName}</h1>
@@ -143,9 +155,10 @@ export default function Chat() {
             return (
               <div
                 key={msg.id}
-                className={`flex items-end ${isMe ? "justify-end" : "justify-start"}`}
+                className={`flex items-end ${
+                  isMe ? "justify-end" : "justify-start"
+                }`}
               >
-                {/* 他者のバブルにはアイコン */}
                 {!isMe && (
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white mr-2"
@@ -155,9 +168,11 @@ export default function Chat() {
                   </div>
                 )}
                 <div className="flex items-end gap-2">
-                  {/* 時刻 */}
-                  {isMe && <span className="text-xs text-gray-400">{msg.formattedDate}</span>}
-                  {/* メッセージバブル */}
+                  {isMe && (
+                    <span className="text-xs text-gray-400">
+                      {msg.formattedDate}
+                    </span>
+                  )}
                   <div
                     className={`relative max-w-xs px-3 py-2 text-sm text-black rounded-lg shadow ${
                       isMe ? "bg-blue-100 bubble-right" : "bg-gray-100 bubble-left"
@@ -165,7 +180,11 @@ export default function Chat() {
                   >
                     {msg.content}
                   </div>
-                  {!isMe && <span className="text-xs text-gray-400">{msg.formattedDate}</span>}
+                  {!isMe && (
+                    <span className="text-xs text-gray-400">
+                      {msg.formattedDate}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -175,7 +194,10 @@ export default function Chat() {
       </div>
 
       {/* 入力欄 */}
-      <div className="fixed left-0 right-0 bg-white px-4 py-2 shadow" style={{ bottom: 0 }}>
+      <div
+        className="fixed left-0 right-0 bg-white px-4 py-2 shadow"
+        style={{ bottom: 0 }}
+      >
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
