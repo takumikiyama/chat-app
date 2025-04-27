@@ -8,19 +8,20 @@ datasource db {
 }
 
 model User {
-  id               String        @id @default(uuid())
-  name             String
-  email            String        @unique
-  password         String
-  bio              String?
-  createdAt        DateTime      @default(now())
-  chats1           Chat[]        @relation("ChatUser1")
-  chats2           Chat[]        @relation("ChatUser2")
-  matchedPairs1    MatchPair[]   @relation("MatchPairUser1")
-  matchedPairs2    MatchPair[]   @relation("MatchPairUser2")
-  receivedMessages SentMessage[] @relation("ReceivedMessages")
-  sentMessages     SentMessage[] @relation("SentMessages")
-  messagesSent     Message[]     @relation("UserMessages")
+  id                String             @id @default(uuid())
+  name              String
+  email             String             @unique
+  password          String
+  bio               String?
+  createdAt         DateTime           @default(now())
+  chats1            Chat[]             @relation("ChatUser1")
+  chats2            Chat[]             @relation("ChatUser2")
+  matchedPairs1     MatchPair[]        @relation("MatchPairUser1")
+  matchedPairs2     MatchPair[]        @relation("MatchPairUser2")
+  receivedMessages  SentMessage[]      @relation("ReceivedMessages")
+  sentMessages      SentMessage[]      @relation("SentMessages")
+  messagesSent      Message[]          @relation("UserMessages")
+  pushSubscriptions PushSubscription[] @relation("UserSubscriptions")
 }
 
 model SentMessage {
@@ -30,7 +31,7 @@ model SentMessage {
   message    String
   createdAt  DateTime @default(now())
   receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  sender     User     @relation("SentMessages",   fields: [senderId],   references: [id])
 }
 
 model MatchPair {
@@ -44,13 +45,13 @@ model MatchPair {
 }
 
 model Chat {
-  id       String    @id @default(uuid())
-  user1Id  String
-  user2Id  String
-  createdAt DateTime @default(now())
-  user1    User      @relation("ChatUser1", fields: [user1Id], references: [id])
-  user2    User      @relation("ChatUser2", fields: [user2Id], references: [id])
-  messages Message[]
+  id        String    @id @default(uuid())
+  user1Id   String
+  user2Id   String
+  createdAt DateTime  @default(now())
+  user1     User      @relation("ChatUser1", fields: [user1Id], references: [id])
+  user2     User      @relation("ChatUser2", fields: [user2Id], references: [id])
+  messages  Message[]
 }
 
 model Message {
@@ -59,6 +60,19 @@ model Message {
   senderId  String
   content   String
   createdAt DateTime @default(now())
-  chat      Chat     @relation(fields: [chatId], references: [id])
+  chat      Chat     @relation(fields: [chatId],   references: [id])
   sender    User     @relation("UserMessages", fields: [senderId], references: [id])
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  endpoint     String   @unique
+  subscription Json
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  user         User     @relation("UserSubscriptions", fields: [userId], references: [id])
+
+  @@index([userId])
 }

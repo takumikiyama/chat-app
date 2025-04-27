@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import FixedTabBar from "../components/FixedTabBar";
+import { unsubscribePush } from "@/app/lib/push";
 
 function getInitials(name: string) {
   return name
@@ -80,7 +81,14 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+          // プッシュ購読解除
+          await unsubscribePush();
+    } catch (e) {
+          console.error("プッシュ解除エラー:", e);
+    }
+    // ローカルストレージ・リダイレクト
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     router.push("/login");

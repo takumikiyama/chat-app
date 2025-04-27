@@ -8,6 +8,14 @@ const pwaOptions = {
   register: true,
   skipWaiting: true,
   disable: false,
+  swSrc: "service-worker.js", 
+  // ← ここでプリキャッシュから除外したいパターンを指定
+  buildExcludes: [
+    /app-build-manifest\.json$/,      // App Router の古い manifest
+    /middleware-build-manifest\.json$/,
+    /\.js\.map$/,                     // ソースマップも除外
+  ],
+
   fallbacks: {
     document: "/offline.html",
   },

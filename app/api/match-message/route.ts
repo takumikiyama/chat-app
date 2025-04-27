@@ -1,8 +1,17 @@
 // app/api/match-message/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import webpush, { PushSubscription as WebPushSubscription } from "web-push";
 
 const prisma = new PrismaClient();
+
+// VAPID 鍵の設定
+webpush.setVapidDetails(
+  "https://chat-app-beta-amber-91.vercel.app",
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,7 +59,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Chat 作成 if needed
-      const existingChat = await prisma.chat.findFirst({
+      let chat = await prisma.chat.findFirst({
         where: {
           OR: [
             { user1Id: senderId, user2Id: matchedUserId },
@@ -58,22 +67,53 @@ export async function POST(req: NextRequest) {
           ],
         },
       });
-      if (!existingChat) {
-        await prisma.chat.create({
+      if (!chat) {
+        chat = await prisma.chat.create({
           data: { user1Id: senderId, user2Id: matchedUserId },
         });
       }
 
-      // ※ プッシュ通知はここでは行わず、
-      //    別途 /api/push-match などで実装予定
+      // ===== Web Push 通知送信 =====
+      // 両ユーザーの有効な購読情報を取得
+      const subs = await prisma.pushSubscription.findMany({
+        where: {
+          OR: [
+            { userId: senderId     , isActive: true },
+            { userId: matchedUserId, isActive: true },
+          ],
+        },
+      });
+
+      // 通知ペイロード
+      const payload = JSON.stringify({
+        type:   "match",
+        chatId: chat.id,
+        title:  "マッチング成立！",
+        body:   `「${message}」でマッチしました！`,
+      });
+
+      // 各購読先へ並列送信（型アサーションで Json → WebPushSubscription）
+      await Promise.all(
+        subs.map((s) =>
+          webpush.sendNotification(
+            s.subscription as unknown as WebPushSubscription,
+            payload
+          )
+        )
+      );
 
       return NextResponse.json({ message: "Match created!" });
     }
 
     // 4) マッチ未成立の場合
-    return NextResponse.json({ message: "Message sent, waiting for a match!" });
+    return NextResponse.json({
+      message: "Message sent, waiting for a match!",
+    });
   } catch (error) {
     console.error("🚨 マッチングエラー:", error);
-    return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to send message" },
+      { status: 500 }
+    );
   }
 }
