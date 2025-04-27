@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
+import { subscribePush } from "@/app/lib/push";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,6 +22,7 @@ export default function Login() {
 
       localStorage.setItem("userId", response.data.userId);
       localStorage.setItem("token", response.data.token); // ✅ token を保存
+      await subscribePush(); 
       alert("Login successful!");
       router.push("/main");
     } catch (err: unknown) {
