@@ -1,3 +1,4 @@
+// app/notifications/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -28,6 +29,15 @@ export default function Notifications() {
   const [userId, setUserId] = useState<string | null>(null);
   const [cancelPopup, setCancelPopup] = useState<SentMessage | null>(null);
 
+  // 日付フォーマットヘルパー
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleString("ja-JP", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
   // ログインユーザー取得
   useEffect(() => {
     const storedId = localStorage.getItem("userId");
@@ -40,7 +50,11 @@ export default function Notifications() {
     axios
       .get(`/api/notifications?userId=${userId}`)
       .then((res) => {
-        setSentMessages(res.data.sentMessages);
+        // マッチ済みの送信メッセージは除外
+        const filtered = res.data.sentMessages.filter(
+          (m: SentMessage) => !m.isMatched
+        );
+        setSentMessages(filtered);
         setMatchedPairs(res.data.matchedPairs);
       })
       .catch((e) => console.error("🚨 通知データ取得エラー:", e));
@@ -59,7 +73,9 @@ export default function Notifications() {
         data: { messageId: cancelPopup.id, senderId: userId },
       });
       if (res.data.success) {
-        setSentMessages((prev) => prev.filter((m) => m.id !== cancelPopup.id));
+        setSentMessages((prev) =>
+          prev.filter((m) => m.id !== cancelPopup.id)
+        );
       }
     } catch (e) {
       console.error("🚨 メッセージ削除エラー:", e);
@@ -71,7 +87,7 @@ export default function Notifications() {
 
   return (
     <div className="p-5 max-w-md mx-auto relative">
-      {/* 戻る */}
+      {/* 戻るボタン */}
       <button
         onClick={() => router.push("/main")}
         className="absolute left-4 top-5"
@@ -89,35 +105,31 @@ export default function Notifications() {
             {sentMessages.map((msg) => (
               <li
                 key={msg.id}
-                className="p-3 flex justify-between items-center border rounded-lg relative"
+                className="p-3 flex justify-between items-center border rounded-md relative"
               >
                 <div className="flex items-center gap-3">
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: '#ccc' /* or dynamic */ }}
+                    style={{ backgroundColor: "#ccc" }}
                   >
                     {msg.receiver.name.charAt(0)}
                   </div>
                   <div>
-                    <p><strong>To</strong> {msg.receiver.name}</p>
+                    <p>
+                      <strong>To</strong> {msg.receiver.name}
+                    </p>
                     <p>{msg.message}</p>
                     <span className="absolute top-2 right-2 text-sm text-gray-500">
-                      {new Date(msg.createdAt).toLocaleString()}
+                      {formatDate(msg.createdAt)}
                     </span>
                   </div>
                 </div>
-                {msg.isMatched ? (
-                  <button className="bg-gray-400 text-white px-3 py-1 rounded-lg cursor-not-allowed">
-                    マッチング済
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleCancelRequest(msg)}
-                    className="bg-red-500 text-white px-3 py-1 rounded-lg"
-                  >
-                    取り消し
-                  </button>
-                )}
+                <button
+                  onClick={() => handleCancelRequest(msg)}
+                  className="self-end bg-red-500 text-white px-3 py-1 rounded-md"
+                >
+                  取り消し
+                </button>
               </li>
             ))}
           </ul>
@@ -132,15 +144,16 @@ export default function Notifications() {
         {matchedPairs.length > 0 ? (
           <ul className="space-y-2">
             {matchedPairs.map((match) => {
-              const partner = match.user1.id === userId ? match.user2 : match.user1;
+              const partner =
+                match.user1.id === userId ? match.user2 : match.user1;
               return (
                 <li
                   key={match.id}
-                  className="p-3 border rounded-lg flex items-center gap-3 relative"
+                  className="p-3 border rounded-md flex items-center gap-3 relative"
                 >
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: '#aaa' /* or dynamic */ }}
+                    style={{ backgroundColor: "#aaa" }}
                   >
                     {partner.name.charAt(0)}
                   </div>
@@ -148,7 +161,7 @@ export default function Notifications() {
                     <p>{partner.name}</p>
                     <p>{match.message}</p>
                     <span className="absolute top-2 right-2 text-sm text-gray-500">
-                      {new Date(match.matchedAt).toLocaleString()}
+                      {formatDate(match.matchedAt)}
                     </span>
                   </div>
                 </li>
@@ -160,14 +173,20 @@ export default function Notifications() {
         )}
       </div>
 
-      {/* Confirm Cancel Popup */}
+      {/* Cancel Confirmation Popup */}
       {cancelPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white p-5 rounded-xl shadow-lg w-11/12 max-w-sm">
             <h3 className="text-lg font-bold mb-2">Confirmation</h3>
-            <p className="mb-1"><strong>To:</strong> {cancelPopup.receiver.name}</p>
-            <p className="mb-2"><strong>Message:</strong> {cancelPopup.message}</p>
-            <p className="text-sm text-red-500 mb-4">Once deleted, it cannot be undone.</p>
+            <p className="mb-1">
+              <strong>To:</strong> {cancelPopup.receiver.name}
+            </p>
+            <p className="mb-2">
+              <strong>Message:</strong> {cancelPopup.message}
+            </p>
+            <p className="text-sm text-red-500 mb-4">
+              Once deleted, it cannot be undone.
+            </p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={handleConfirmCancel}

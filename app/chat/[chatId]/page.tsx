@@ -43,27 +43,28 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [matchMessage, setMatchMessage] = useState<string>("");
 
   // 1) ログインユーザーIDを取得
   useEffect(() => {
     setCurrentUserId(localStorage.getItem("userId"));
   }, []);
 
-  // 2) 過去メッセージ取得＋WebSocket ルーム参加＋リアルタイム受信登録
+  // 2) チャット情報取得 & ルーム参加 & リアルタイム受信登録
   useEffect(() => {
     if (!chatId) return;
 
-    // REST API で過去メッセージを取得
+    // 過去メッセージ取得
     (async () => {
       try {
         const res = await axios.get<Message[]>(`/api/chat/${chatId}`);
         const formatted = res.data.map((msg) => ({
           ...msg,
           formattedDate: new Date(msg.createdAt).toLocaleString("ja-JP", {
-            hour: "2-digit",
-            minute: "2-digit",
             month: "2-digit",
             day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
           }),
         }));
         setMessages(formatted);
@@ -72,15 +73,32 @@ export default function Chat() {
       }
     })();
 
+    // MatchPair からマッチメッセージ取得
+    (async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        if (!userId) return;
+        const res = await axios.get<{
+          chatId: string;
+          matchedUser: { id: string; name: string };
+          matchMessage: string;
+        }[]>("/api/chat-list", { headers: { userId } });
+        const chat = res.data.find((c) => c.chatId === chatId);
+        setMatchMessage(chat?.matchMessage || "");
+      } catch (e) {
+        console.error("🚨 マッチメッセージ取得エラー:", e);
+      }
+    })();
+
     // ルーム参加
     socket.emit("joinChat", chatId);
 
-    // 新着メッセージ受信ハンドラ
+    // 新着メッセージ受信
     const handleNewMessage = (payload: {
       chatId: string;
       message: Message;
     }) => {
-      if (payload.chatId !== chatId) return; // 他ルームには流さない
+      if (payload.chatId !== chatId) return;
       const { message } = payload;
       const formatted: Message = {
         ...message,
@@ -91,7 +109,6 @@ export default function Chat() {
       };
       setMessages((prev) => [...prev, formatted]);
     };
-
     socket.on("newMessage", handleNewMessage);
 
     return () => {
@@ -113,7 +130,6 @@ export default function Chat() {
         content: newMessage,
       });
       const msg = res.data;
-      // サーバーへ送信（ルームブロードキャスト）
       socket.emit("sendMessage", { chatId, message: msg });
       setNewMessage("");
       inputRef.current?.focus();
@@ -127,29 +143,31 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 5) チャット相手の名前取得
+  // 5) ヘッダー用データ取得
   const partner = messages.find((m) => m.sender.id !== currentUserId);
   const partnerName = partner?.sender.name || "チャット";
 
   return (
-    <div className="relative bg-white h-screen">
+    <div className="flex flex-col bg-white h-screen">
       {/* ヘッダー */}
-      <div className="fixed top-0 left-0 right-0 bg-white flex items-center justify-center px-4 py-2 shadow">
+      <header className="sticky top-0 z-10 bg-white px-4 py-2 shadow flex items-center justify-center">
         <button
           onClick={() => router.push("/chat-list")}
           className="absolute left-4"
         >
           <Image src="/icons/back.png" alt="Back" width={24} height={24} />
         </button>
-        <h1 className="text-lg font-bold">{partnerName}</h1>
-      </div>
+        <div className="flex items-center space-x-2">
+          <h1 className="text-lg font-bold text-black">{partnerName}</h1>
+          {matchMessage && (
+            <span className="text-base text-gray-700">「{matchMessage}」</span>
+          )}
+        </div>
+      </header>
 
       {/* メッセージ一覧 */}
-      <div
-        className="absolute left-0 right-0 px-4"
-        style={{ top: "56px", bottom: "64px", overflowY: "auto" }}
-      >
-        <div className="space-y-3">
+      <main className="flex-1 px-4 overflow-y-auto pb-16">
+        <div className="space-y-3 py-2">
           {messages.map((msg) => {
             const isMe = msg.sender.id === currentUserId;
             return (
@@ -174,7 +192,7 @@ export default function Chat() {
                     </span>
                   )}
                   <div
-                    className={`relative max-w-xs px-3 py-2 text-sm text-black rounded-lg shadow ${
+                    className={`relative max-w-xs px-3 py-2 text-sm text-black rounded-lg shadow $
                       isMe ? "bg-blue-100 bubble-right" : "bg-gray-100 bubble-left"
                     }`}
                   >
@@ -189,32 +207,27 @@ export default function Chat() {
               </div>
             );
           })}
-          <div ref={messagesEndRef} />
         </div>
-      </div>
+        <div ref={messagesEndRef} />
+      </main>
 
       {/* 入力欄 */}
-      <div
-        className="fixed left-0 right-0 bg-white px-4 py-2 shadow"
-        style={{ bottom: 0 }}
-      >
-        <div className="flex items-center gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="メッセージを入力..."
-            className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none"
-          />
-          <button
-            onClick={handleSend}
-            className="bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition"
-          >
-            送信
-          </button>
-        </div>
-      </div>
+      <footer className="fixed bottom-0 left-0 right-0 bg-white px-4 py-3 shadow flex items-center">
+        <input
+          ref={inputRef}
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="メッセージを入力..."
+          className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none"
+        />
+        <button
+          onClick={handleSend}
+          className="bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition"
+        >
+          送信
+        </button>
+      </footer>
 
       {/* 吹き出しのトゲ */}
       <style jsx>{`

@@ -39,8 +39,7 @@ export default function ChatList() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatItem[]>([]);
 
-
-  // 1) API から初回チャット一覧を取得し、日時をフォーマットして state にセット
+  // API からチャット一覧を取得
   const fetchChats = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
@@ -58,7 +57,6 @@ export default function ChatList() {
             minute: "2-digit",
           }),
         }))
-        // 降順ソート（新しいものが上）
         .sort(
           (a, b) =>
             new Date(b.latestMessageAt).getTime() -
@@ -71,10 +69,8 @@ export default function ChatList() {
   };
 
   useEffect(() => {
-    // 初回取得
     fetchChats();
 
-    // 2) 新着メッセージをリアルタイムに受信し、該当チャットのみ更新
     const handleNewMessage = (payload: {
       chatId: string;
       message: { content: string; createdAt: string; sender: { name: string } };
@@ -105,13 +101,11 @@ export default function ChatList() {
     };
     socket.on("newMessage", handleNewMessage);
 
-    // 3) マッチ成立時は新規チャットが追加される可能性があるので一覧を再取得
     const handleNewMatch = () => {
       fetchChats();
     };
     socket.on("newMatch", handleNewMatch);
 
-    // クリーンアップ
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.off("newMatch", handleNewMatch);
@@ -121,7 +115,7 @@ export default function ChatList() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <div className="p-4 flex-1">
-        <h1 className="text-2xl font-bold mb-3 text-center">Chat</h1>
+        <h1 className="text-2xl font-bold text-black mb-3 text-center">Chat</h1>
         <ul className="space-y-2">
           {chats.map((chat) => (
             <li
@@ -129,7 +123,7 @@ export default function ChatList() {
               onClick={() => router.push(`/chat/${chat.chatId}`)}
               className="relative p-3 cursor-pointer hover:bg-gray-100 transition rounded-lg"
             >
-              <span className="absolute top-3 right-3 text-xs text-gray-400">
+              <span className="absolute top-10 right-3 text-xs text-gray-400">
                 {chat.latestMessageAt}
               </span>
               <div className="flex items-center gap-3">
@@ -140,17 +134,15 @@ export default function ChatList() {
                   {getInitials(chat.matchedUser.name)}
                 </div>
                 <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-semibold">
+                  <div className="flex items-baseline gap-0">
+                    <span className="text-base text-black font-semibold">
                       {chat.matchedUser.name}
                     </span>
-                    <span className="text-lg font-semibold">
+                    <span className="text-base text-black font-semibold">
                       「{chat.matchMessage}」
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {chat.latestMessage}
-                  </div>
+                  <div className="text-sm text-gray-500">{chat.latestMessage}</div>
                 </div>
               </div>
             </li>

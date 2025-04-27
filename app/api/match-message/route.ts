@@ -43,6 +43,15 @@ export async function POST(req: NextRequest) {
 
     // 2) マッチ成立時の処理
     if (matchedUserId) {
+      // マッチ相手ユーザー情報を取得
+      const matchedUser = await prisma.user.findUnique({
+        where: { id: matchedUserId },
+        select: { id: true, name: true },
+      });
+      if (!matchedUser) {
+        throw new Error("Matched user not found");
+      }
+
       // MatchPair 作成 if needed
       const existingMatchPair = await prisma.matchPair.findFirst({
         where: {
@@ -78,21 +87,23 @@ export async function POST(req: NextRequest) {
       const subs = await prisma.pushSubscription.findMany({
         where: {
           OR: [
-            { userId: senderId     , isActive: true },
+            { userId: senderId,     isActive: true },
             { userId: matchedUserId, isActive: true },
           ],
         },
       });
 
-      // 通知ペイロード
+      // 通知ペイロードに matchedUser の情報を追加
       const payload = JSON.stringify({
-        type:   "match",
-        chatId: chat.id,
-        title:  "マッチング成立！",
-        body:   `「${message}」でマッチしました！`,
+        type:            "match",
+        chatId:          chat.id,
+        title:           "マッチング成立！",
+        body:            `あなたは ${matchedUser.name} さんと「${message}」でマッチしました！`,
+        matchedUserId:   matchedUser.id,
+        matchedUserName: matchedUser.name,
       });
 
-      // 各購読先へ並列送信（型アサーションで Json → WebPushSubscription）
+      // 各購読先へ並列送信
       await Promise.all(
         subs.map((s) =>
           webpush.sendNotification(
@@ -105,7 +116,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Match created!" });
     }
 
-    // 4) マッチ未成立の場合
+    // マッチ未成立の場合
     return NextResponse.json({
       message: "Message sent, waiting for a match!",
     });
