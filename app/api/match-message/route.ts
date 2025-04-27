@@ -43,13 +43,17 @@ export async function POST(req: NextRequest) {
 
     // 2) マッチ成立時の処理
     if (matchedUserId) {
-      // マッチ相手ユーザー情報を取得
+      // — マッチした両ユーザーの情報を取得 —
+      const senderUser = await prisma.user.findUnique({
+        where: { id: senderId },
+        select: { id: true, name: true },
+      });
       const matchedUser = await prisma.user.findUnique({
         where: { id: matchedUserId },
         select: { id: true, name: true },
       });
-      if (!matchedUser) {
-        throw new Error("Matched user not found");
+      if (!senderUser || !matchedUser) {
+        throw new Error("User not found");
       }
 
       // MatchPair 作成 if needed
@@ -82,44 +86,46 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // ===== Web Push 通知送信 =====
+      // — Web Push 通知送信 —
       // 両ユーザーの有効な購読情報を取得
       const subs = await prisma.pushSubscription.findMany({
         where: {
           OR: [
-            { userId: senderId,     isActive: true },
+            { userId: senderId,      isActive: true },
             { userId: matchedUserId, isActive: true },
           ],
         },
       });
 
-      // 通知ペイロードに matchedUser の情報を追加
-      const payload = JSON.stringify({
-        type:            "match",
-        chatId:          chat.id,
-        title:           "マッチング成立！",
-        body:            `あなたは ${matchedUser.name} さんと「${message}」でマッチしました！`,
-        matchedUserId:   matchedUser.id,
-        matchedUserName: matchedUser.name,
-      });
-
-      // 各購読先へ並列送信
+      // 購読ごとに相手ユーザーを判別して通知ペイロードを作成
       await Promise.all(
-        subs.map((s) =>
-          webpush.sendNotification(
+        subs.map((s) => {
+          // この購読がどちらのユーザーのものか
+          const other = s.userId === senderId ? matchedUser : senderUser;
+
+          const payload = JSON.stringify({
+            type:            "match",
+            chatId:          chat!.id,
+            title:           "マッチング成立！",
+            body:            `あなたは ${other.name} さんと「${message}」でマッチしました！`,
+            matchedUserId:   other.id,
+            matchedUserName: other.name,
+          });
+
+          return webpush.sendNotification(
             s.subscription as unknown as WebPushSubscription,
             payload
-          )
-        )
+          );
+        })
       );
 
       return NextResponse.json({ message: "Match created!" });
     }
 
     // マッチ未成立の場合
-    return NextResponse.json({
-      message: "Message sent, waiting for a match!",
-    });
+    return NextResponse.json(
+      { message: "Message sent, waiting for a match!" }
+    );
   } catch (error) {
     console.error("🚨 マッチングエラー:", error);
     return NextResponse.json(
