@@ -8,7 +8,9 @@ const pwaOptions = {
   register: true,
   skipWaiting: true,
   disable: false,
-  swSrc: "service-worker.js", 
+  // ← InjectManifest モードを有効化
+  swSrc: "public/service-worker.js",
+  swDest: "sw.js",
   // ← ここでプリキャッシュから除外したいパターンを指定
   buildExcludes: [
     /app-build-manifest\.json$/,      // App Router の古い manifest
