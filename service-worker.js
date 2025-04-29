@@ -6,6 +6,7 @@ workbox.precaching.precacheAndRoute(self.__WB_MANIFEST);
 // プッシュ受信時のハンドラ
 self.addEventListener('push', event => {
   const payload = event.data.json();
+  console.log('[SW] push payload:', payload);
   const { type, chatId, title, body } = payload;
 
   event.waitUntil(
