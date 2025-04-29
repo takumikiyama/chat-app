@@ -137,6 +137,18 @@ export default function Chat() {
       console.error("🚨 送信エラー:", e);
     }
   };
+  
+  useEffect(() => {
+    // BroadcastChannel を作って、開いている chatId を SW に教える
+    const bc = new BroadcastChannel('CHAT_STATUS');
+    bc.postMessage({ type: 'OPEN_CHAT', chatId });
+
+    return () => {
+      // ページを離れる時に閉じたことを教える
+      bc.postMessage({ type: 'CLOSE_CHAT', chatId });
+      bc.close();
+    };
+  }, [chatId]);
 
   // 4) 自動スクロール
   useEffect(() => {

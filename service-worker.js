@@ -1,48 +1,46 @@
-/* public/service-worker.js */
-/* global self, clients */
+/* service-worker.js */
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js');
 
-// ① インストール直後に即アクティブ、既存クライアントを制御下に
 workbox.core.skipWaiting();
 workbox.core.clientsClaim();
-
 workbox.precaching.precacheAndRoute(self.__WB_MANIFEST);
 
-// プッシュ受信時のハンドラ
+// 今開いているチャットIDを保持する Set
+const openChats = new Set();
+
+// BroadcastChannel でチャット開閉イベントを受け取る
+const bc = new BroadcastChannel('CHAT_STATUS');
+bc.addEventListener('message', event => {
+  const { type, chatId } = event.data;
+  if (type === 'OPEN_CHAT') {
+    openChats.add(chatId);
+  } else if (type === 'CLOSE_CHAT') {
+    openChats.delete(chatId);
+  }
+});
+
 self.addEventListener('push', event => {
   const payload = event.data.json();
   console.log('[SW] push payload:', payload);
-
   const { type, chatId, title, body } = payload;
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: false }).then(winClients => {
-      // ② 型と URL を厳密にチェック
-      const inChat = winClients.some(c => {
-        if (type !== 'message') return false;
-        const url = new URL(c.url);
-        return (
-          url.pathname === `/chat/${chatId}` &&
-          c.visibilityState === 'visible'
-        );
-      });
 
-      if (inChat) {
-        console.log('[SW] Chat page open → suppress notification');
-        // 該当チャット画面を表示中 → 通知しない
+  event.waitUntil(
+    // 「今開いているチャット」に対象 chatId が含まれていれば抑制
+    (async () => {
+      if (type === 'message' && openChats.has(chatId)) {
+        console.log('[SW] suppress notification because chat is open:', chatId);
         return;
       }
-
       // 通知を表示
       return self.registration.showNotification(title, {
         body,
         tag: type + (chatId || ''),
         data: payload,
       });
-    })
+    })()
   );
 });
 
-// 通知クリック時のハンドラ（そのまま）
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const { type, chatId } = event.notification.data;
