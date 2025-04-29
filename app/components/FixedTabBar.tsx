@@ -12,7 +12,7 @@ export default function FixedTabBar() {
     const profileIcon = pathname === "/profile" ? "/icons/home.png" : "/icons/home blank.png";
 
     return (
-        <div className="fixed bottom-8 left-1/2 scale-[1.3] transform -translate-x-1/2 bg-white/60 rounded-full shadow-2xl flex justify-center items-center gap-8 px-5 py-2">
+        <div className="fixed bottom-0 left-0 right-0 bg-white flex justify-around items-center px-5 py-3">
             <button onClick={() => router.push("/main")}>
                 <Image src={mainIcon} alt="Main" width={26} height={26} />
             </button>

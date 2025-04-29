@@ -18,16 +18,17 @@ const MESSAGES = [
   "ひゃああああ",
   "花見行きてえ",
   "研究どう？",
-  "みんなで集まろ", 
-  "Let's grab a drink", 
-  "おい", 
-  "Let's go for a drive🚗", 
+  "みんなで集まろ",
+  "Let's grab a drink",
+  "おい",
+  "Let's go for a drive🚗",
   "最近何してんねん",
-  "研究焦ってきた", 
-  "いつもありがとう", 
-  "新学期始まるね", 
-  "スポーツしよう", 
-  "😀😁🚢✨"
+  "研究焦ってきた",
+  "いつもありがとう",
+  "新学期始まるね",
+  "スポーツしよう",
+  "😀😁🚢✨",
+  "Plan a party for us"
 ];
 
 function getInitials(name: string) {
@@ -49,7 +50,7 @@ export default function Main() {
   const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  const [matchCount, setMatchCount] = useState(0);
+  const [matchCount, setMatchCount] = useState<number>(0);
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [isSent, setIsSent] = useState(false);
@@ -66,13 +67,13 @@ export default function Main() {
       .catch((e) => console.error("ユーザー取得エラー:", e));
   }, []);
 
-  // 受信マッチメッセージ件数の取得
+  // 受信マッチ件数の取得
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
+    const uid = localStorage.getItem("userId");
+    if (!uid) return;
     axios
       .get<{ count: number }>("/api/match-message/count", {
-        headers: { userId },
+        headers: { userId: uid },
       })
       .then((res) => setMatchCount(res.data.count))
       .catch((e) => console.error("件数取得エラー:", e));
@@ -96,7 +97,8 @@ export default function Main() {
       setTimeout(() => setIsSent(false), 3000);
       setSelectedMessage(null);
       setSelectedRecipientIds([]);
-      // 送信後に再取得（自分宛件数が減るケースがあるなら）
+
+      // 再取得
       axios
         .get<{ count: number }>("/api/match-message/count", {
           headers: { userId: currentUserId },
@@ -116,73 +118,76 @@ export default function Main() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden">
+    <div className="relative h-screen">
       {/* 固定ヘッダー */}
       <div className="fixed top-0 left-0 w-full bg-white z-10 p-4">
         <div className="flex justify-between items-center">
-          <button onClick={() => router.push("/notifications")}>
-            <Image src="/icons/history.png" alt="History" width={24} height={24} />
+          <button onClick={() => router.push("/notifications")}> 
+            <Image src="/icons/history.png" alt="History" width={24} height={24} className="filter invert" />
           </button>
-          <h1 className="text-3xl font-bold" style={{ fontFamily: "'Poppins', sans-serif" }}>
+          <h1 className="text-3xl font-bold text-black" style={{ fontFamily: "'Poppins', sans-serif" }}>
             Glance
           </h1>
           <div className="w-6" />
         </div>
-        <p className="text-sm text-gray-600 text-center leading-snug mt-2">
-          A chat begins when you both send the same message.
-        </p>
-        {/* ← 受信マッチメッセージ件数 */}
-        <p className="text-sm text-gray-500 text-center mt-1">
-          You have received <span className="font-semibold">{matchCount}</span> messages so far
+        <p className="text-sm text-gray-800 text-center leading-snug mt-2">
+          お互いが同じメッセージを送り合ったら初めて届き、チャットが始まります。
+          今日は <strong>{matchCount}</strong> 件受信済。
         </p>
       </div>
 
       {/* 送信待機バー */}
-      <div className="fixed top-[115px] left-1/2 transform -translate-x-1/2 bg-white/30 backdrop-blur-md rounded-full shadow-xl flex w-[95%] max-w-[600px] px-5 py-2 z-10">
-        <div className="flex-1 pr-32 flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          {selectedMessage ? (
-            <span
-              onClick={() => setSelectedMessage(null)}
-              className="flex-none truncate max-w-[120px] px-2 py-1 bg-black text-white rounded-full font-medium"
-            >
-              {selectedMessage}
-            </span>
-          ) : (
-            <span className="flex-none px-2 py-1 text-gray-500">メッセージ未選択</span>
-          )}
-          {selectedRecipientIds.length > 0 ? (
-            selectedRecipientIds.map((id) => {
-              const u = users.find((u) => u.id === id);
-              return (
-                <span key={id} className="flex-none px-1 py-1 text-black font-semibold">
-                  {u?.name}
-                </span>
-              );
-            })
-          ) : (
-            <span className="flex-none px-2 py-1 text-gray-500">送信先未選択</span>
-          )}
+      {(selectedMessage || selectedRecipientIds.length > 0) && (
+        <div className="fixed bottom-12 left-0 right-0 bg-black flex w-full px-4 py-3 z-20">
+          <div className="flex-1 pr-40 mr-10 flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
+            {selectedMessage ? (
+              <span
+                onClick={() => setSelectedMessage(null)}
+                className="truncate max-w-[120px] px-2 py-1 font-bold text-white"
+              >
+                {selectedMessage}
+              </span>
+            ) : (
+              <span className="px-2 py-1 text-gray-400">メッセージ</span>
+            )}
+            {selectedRecipientIds.length > 0 ? (
+              selectedRecipientIds.map((id, idx) => {
+                const u = users.find((u) => u.id === id);
+                return (
+                  <span
+                    key={id}
+                    onClick={() => toggleRecipient(id)}
+                    className="px-1 py-1 text-white font-semibold whitespace-nowrap"
+                  >
+                    {u?.name}{idx < selectedRecipientIds.length-1 ? ', ' : ''}
+                  </span>
+                );
+              })
+            ) : (
+              <span className="px-2 py-1 text-gray-400">送信先</span>
+            )}
+          </div>
+          <button
+            onClick={handleSend}
+            className="absolute right-5 top-1/2 transform -translate-y-1/2 transition-transform duration-150 ease-out active:scale-90 active:opacity-80 focus:outline-none"
+          >
+            <Image src="/icons/send.png" alt="send" width={24} height={24} className="filter invert" />
+          </button>
         </div>
-        <button
-          onClick={handleSend}
-          className="absolute right-5 top-1/2 transform -translate-y-1/2"
-        >
-          <Image src="/icons/send.png" alt="send" width={24} height={24} />
-        </button>
-      </div>
+      )}
 
       {/* 本文：2カラム */}
-      <div className="mt-[165px] flex flex-1 overflow-hidden">
+      <div className="absolute top-[110px] bottom-[80px] left-0 right-0 flex gap-4 px-4 py-2">
         {/* メッセージ選択 */}
-        <div className="w-2/5 overflow-y-auto p-4 space-y-2 pb-24">
+        <div className="flex-1 overflow-y-auto space-y-2">
           {MESSAGES.map((msg) => (
             <button
               key={msg}
               onClick={() => setSelectedMessage((prev) => (prev === msg ? null : msg))}
-              className={`w-full px-4 py-3 rounded-[35px] transition transform ${
+              className={`w-full text-left px-2 py-2 text-[18px] transition ${
                 selectedMessage === msg
-                  ? "bg-black text-white scale-105 shadow-lg"
-                  : "bg-gradient-to-r from-gray-200 to-gray-100 text-gray-800 hover:from-gray-300 hover:to-gray-200"
+                  ? "font-bold text-black"
+                  : "text-gray-700 hover:text-black"
               }`}
             >
               {msg}
@@ -191,29 +196,28 @@ export default function Main() {
         </div>
 
         {/* 送信先リスト */}
-        <div className="w-3/5 overflow-y-auto p-4 space-y-2 pb-24">
+        <div className="flex-1 overflow-y-auto space-y-1 pb-28">
           {users
             .filter((u) => u.id !== currentUserId)
             .map((u) => (
               <div
                 key={u.id}
                 onClick={() => toggleRecipient(u.id)}
-                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition hover:bg-gray-100"
+                className="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition hover:bg-gray-100"
               >
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                   style={{ backgroundColor: getBgColor(u.name) }}
                 >
                   {getInitials(u.name)}
                 </div>
-                <div className="flex-1">
-                  <span
-                    className={`text-lg ${selectedRecipientIds.includes(u.id) ? "font-bold" : ""}`}
-                  >
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[18px] text-black truncate ${selectedRecipientIds.includes(u.id) ? "font-bold" : ""}`}>
                     {u.name}
-                  </span>
-                  {/* ← bio を小さくグレーで表示 */}
-                  <p className="text-sm text-gray-500 truncate">{u.bio || "自己紹介未設定"}</p>
+                  </p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {u.bio || "自己紹介未設定"}
+                  </p>
                 </div>
                 {selectedRecipientIds.includes(u.id) && (
                   <Image src="/icons/check.png" alt="Selected" width={20} height={20} />
