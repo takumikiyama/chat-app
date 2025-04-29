@@ -15,7 +15,7 @@ self.addEventListener('push', event => {
 
   const { type, chatId, title, body } = payload;
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(winClients => {
+    clients.matchAll({ type: 'window', includeUncontrolled: false }).then(winClients => {
       // ② 型と URL を厳密にチェック
       const inChat = winClients.some(c => {
         if (type !== 'message') return false;
@@ -27,6 +27,7 @@ self.addEventListener('push', event => {
       });
 
       if (inChat) {
+        console.log('[SW] Chat page open → suppress notification');
         // 該当チャット画面を表示中 → 通知しない
         return;
       }
