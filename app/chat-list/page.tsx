@@ -16,7 +16,7 @@ interface ChatItem {
   latestMessageAt: string; // フォーマット済み日時文字列
 }
 
-// 名前からイニシャルを生成
+// イニシャル生成
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -25,7 +25,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-// 名前から背景色を決定する簡易ハッシュ
+// 背景色ハッシュ
 function getBgColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -113,42 +113,54 @@ export default function ChatList() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="p-4 flex-1">
-        <h1 className="text-2xl font-bold text-black mb-3 text-center">Chat</h1>
-        <ul className="space-y-2">
+    <div className="relative min-h-screen flex flex-col bg-white">
+      {/* ヘッダー */}
+      <div className="fixed top-0 left-0 right-0 bg-white z-10 p-4">
+        <h1 className="text-2xl font-bold text-center">Chat</h1>
+      </div>
+
+      {/* チャット一覧スクロール領域 */}
+      <div className="absolute top-16 bottom-14 left-0 right-0 overflow-y-auto p-3">
+        <ul className="space-y-0">
           {chats.map((chat) => (
             <li
               key={chat.chatId}
               onClick={() => router.push(`/chat/${chat.chatId}`)}
-              className="relative p-3 cursor-pointer hover:bg-gray-100 transition rounded-lg"
+              className="relative p-3 cursor-pointer rounded-lg flex items-center gap-3"
             >
-              <span className="absolute top-10 right-3 text-xs text-gray-400">
-                {chat.latestMessageAt}
-              </span>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: getBgColor(chat.matchedUser.name) }}
-                >
-                  {getInitials(chat.matchedUser.name)}
+              {/* アイコン */}
+              <div
+                className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: getBgColor(chat.matchedUser.name) }}
+              >
+                {getInitials(chat.matchedUser.name)}
+              </div>
+
+              {/* 本文 */}
+              <div className="flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-base font-semibold text-black">
+                    {chat.matchedUser.name}
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-baseline gap-0">
-                    <span className="text-base text-black font-semibold">
-                      {chat.matchedUser.name}
-                    </span>
-                    <span className="text-base text-black font-semibold">
-                      「{chat.matchMessage}」
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-500">{chat.latestMessage}</div>
+                <div className="text-sm text-gray-700 truncate">
+                  「{chat.matchMessage}」
+                </div>
+                <div className="text-sm text-gray-500 truncate">
+                  {chat.latestMessage}
                 </div>
               </div>
+
+              {/* タイムスタンプ */}
+              <span className="absolute bottom-3 right-3 text-xs text-gray-400">
+                {chat.latestMessageAt}
+              </span>
             </li>
           ))}
         </ul>
       </div>
+
+      {/* 下部タブバー */}
       <FixedTabBar />
     </div>
   );

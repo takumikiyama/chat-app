@@ -150,23 +150,24 @@ export default function Chat() {
   return (
     <div className="flex flex-col bg-white h-screen">
       {/* ヘッダー */}
-      <header className="sticky top-0 z-10 bg-white px-4 py-2 shadow flex items-center justify-center">
+      <header className="sticky top-0 z-10 bg-white px-4 py-2 flex flex-col items-center">
+        {/* ← アイコン */}
         <button
           onClick={() => router.push("/chat-list")}
-          className="absolute left-4"
+          className="absolute left-4 top-2 focus:outline-none"
         >
-          <Image src="/icons/back.png" alt="Back" width={24} height={24} />
+          <Image src="/icons/back.png" alt="Back" width={20} height={20} />
         </button>
-        <div className="flex items-center space-x-2">
-          <h1 className="text-lg font-bold text-black">{partnerName}</h1>
-          {matchMessage && (
-            <span className="text-base text-gray-700">「{matchMessage}」</span>
-          )}
-        </div>
+        {/* ユーザー名 */}
+        <h1 className="text-base font-bold text-black">{partnerName}</h1>
+        {/* マッチメッセージ */}
+        {matchMessage && (
+          <p className="text-sm text-gray-700 mt-1">「{matchMessage}」</p>
+        )}
       </header>
 
       {/* メッセージ一覧 */}
-      <main className="flex-1 px-4 overflow-y-auto pb-16">
+      <main className="flex-1 px-4 overflow-y-auto pb-20">
         <div className="space-y-3 py-2">
           {messages.map((msg) => {
             const isMe = msg.sender.id === currentUserId;
@@ -192,7 +193,7 @@ export default function Chat() {
                     </span>
                   )}
                   <div
-                    className={`relative max-w-xs px-3 py-2 text-sm text-black rounded-lg shadow $
+                    className={`relative max-w-xs px-3 py-2 text-sm text-black rounded-lg ${
                       isMe ? "bg-blue-100 bubble-right" : "bg-gray-100 bubble-left"
                     }`}
                   >
@@ -212,7 +213,7 @@ export default function Chat() {
       </main>
 
       {/* 入力欄 */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white px-4 py-3 shadow flex items-center">
+      <footer className="fixed bottom-4 left-0 right-0 bg-white px-4 py-3 shadow flex items-center">
         <input
           ref={inputRef}
           type="text"

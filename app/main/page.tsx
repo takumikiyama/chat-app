@@ -55,6 +55,38 @@ export default function Main() {
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [isSent, setIsSent] = useState(false);
 
+  // ── (1) 初回マウントで localStorage から選択状態を復元 ──
+  useEffect(() => {
+    const savedMsg = localStorage.getItem("selectedMessage");
+    if (savedMsg) setSelectedMessage(savedMsg);
+
+    const savedRecs = localStorage.getItem("selectedRecipientIds");
+    if (savedRecs) {
+      try {
+        setSelectedRecipientIds(JSON.parse(savedRecs));
+      } catch (e) {
+        console.error("selectedRecipientIds の復元に失敗:", e);
+      }
+    }
+  }, []);
+
+  // ── (2) selectedMessage が変わるたびに保存／削除 ──
+  useEffect(() => {
+    if (selectedMessage) {
+      localStorage.setItem("selectedMessage", selectedMessage);
+    } else {
+      localStorage.removeItem("selectedMessage");
+    }
+  }, [selectedMessage]);
+
+  // ── (3) selectedRecipientIds が変わるたびに保存 ──
+  useEffect(() => {
+    localStorage.setItem(
+      "selectedRecipientIds",
+      JSON.stringify(selectedRecipientIds)
+    );
+  }, [selectedRecipientIds]);
+
   useEffect(() => {
     setCurrentUserId(localStorage.getItem("userId"));
   }, []);
@@ -122,10 +154,13 @@ export default function Main() {
       {/* 固定ヘッダー */}
       <div className="fixed top-0 left-0 w-full bg-white z-10 p-4">
         <div className="flex justify-between items-center">
-          <button onClick={() => router.push("/notifications")}> 
-            <Image src="/icons/history.png" alt="History" width={24} height={24} className="filter invert" />
+          <button onClick={() => router.push("/notifications")}>
+            <Image src="/icons/history.png" alt="History" width={24} height={24} />
           </button>
-          <h1 className="text-3xl font-bold text-black" style={{ fontFamily: "'Poppins', sans-serif" }}>
+          <h1
+            className="text-3xl font-bold text-black"
+            style={{ fontFamily: "'Poppins', sans-serif" }}
+          >
             Glance
           </h1>
           <div className="w-6" />
@@ -138,12 +173,12 @@ export default function Main() {
 
       {/* 送信待機バー */}
       {(selectedMessage || selectedRecipientIds.length > 0) && (
-        <div className="fixed bottom-12 left-0 right-0 bg-black flex w-full px-4 py-3 z-20">
+        <div className="fixed bottom-16 left-0 right-0 bg-black flex w-full px-4 py-3 z-20">
           <div className="flex-1 pr-40 mr-10 flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
             {selectedMessage ? (
               <span
                 onClick={() => setSelectedMessage(null)}
-                className="truncate max-w-[120px] px-2 py-1 font-bold text-white"
+                className="flex-none px-2 py-1 font-bold text-white whitespace-nowrap"
               >
                 {selectedMessage}
               </span>
@@ -159,7 +194,8 @@ export default function Main() {
                     onClick={() => toggleRecipient(id)}
                     className="px-1 py-1 text-white font-semibold whitespace-nowrap"
                   >
-                    {u?.name}{idx < selectedRecipientIds.length-1 ? ', ' : ''}
+                    {u?.name}
+                    {idx < selectedRecipientIds.length - 1 ? ", " : ""}
                   </span>
                 );
               })
@@ -171,7 +207,13 @@ export default function Main() {
             onClick={handleSend}
             className="absolute right-5 top-1/2 transform -translate-y-1/2 transition-transform duration-150 ease-out active:scale-90 active:opacity-80 focus:outline-none"
           >
-            <Image src="/icons/send.png" alt="send" width={24} height={24} className="filter invert" />
+            <Image
+              src="/icons/send.png"
+              alt="send"
+              width={24}
+              height={24}
+              className="filter invert"
+            />
           </button>
         </div>
       )}
@@ -203,7 +245,7 @@ export default function Main() {
               <div
                 key={u.id}
                 onClick={() => toggleRecipient(u.id)}
-                className="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition hover:bg-gray-100"
+                className="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition"
               >
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
@@ -212,7 +254,11 @@ export default function Main() {
                   {getInitials(u.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-[18px] text-black truncate ${selectedRecipientIds.includes(u.id) ? "font-bold" : ""}`}>
+                  <p
+                    className={`text-[18px] text-black truncate ${
+                      selectedRecipientIds.includes(u.id) ? "font-bold" : ""
+                    }`}
+                  >
                     {u.name}
                   </p>
                   <p className="text-sm text-gray-500 truncate">
