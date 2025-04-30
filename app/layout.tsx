@@ -58,6 +58,8 @@ export default function RootLayout({
 
         {/* SMIL タイルカラー */}
         <meta name="theme-color" content="#ffffff" />
+
+        <meta name="color-scheme" content="light" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
