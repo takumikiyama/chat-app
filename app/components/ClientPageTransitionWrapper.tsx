@@ -14,17 +14,17 @@ export default function ClientPageTransitionWrapper({ children }: Props) {
   const prevPathRef = useRef<string | null>(null);
   const [direction, setDirection] = useState(0);
 
-  // 前回のパスを保存して、今回の移動方向を判定
+  // どちらのパス→どちらのパスかを見て direction を +1 / -1 / 0 で決める
   useEffect(() => {
     const prev = prevPathRef.current;
     if (prev && pathname) {
-      // /chat-list → /chat/:id のときは forward (右から入る)
       if (prev === "/chat-list" && pathname.startsWith("/chat/")) {
-        setDirection(1);
-      }
-      // /chat/:id → /chat-list のときは backward (左から入る)
-      else if (prev.startsWith("/chat/") && pathname === "/chat-list") {
-        setDirection(-1);
+        setDirection(+1);   // forward
+      } else if (
+        prev.startsWith("/chat/") &&
+        pathname === "/chat-list"
+      ) {
+        setDirection(-1);   // backward
       } else {
         setDirection(0);
       }
@@ -32,21 +32,22 @@ export default function ClientPageTransitionWrapper({ children }: Props) {
     prevPathRef.current = pathname;
   }, [pathname]);
 
-  // variants で x 軸スライドをカスタム
   const variants = {
     initial: (dir: number) => ({
-      x: dir * 300,
-      opacity: 0,
+      x: dir > 0 ? "100%" : "0%",  // backward は最初から画面上にいる
+      opacity: dir > 0 ? 0.6 : 1,
+      scale: dir > 0 ? 1.02 : 1,
     }),
-    animate: { x: 0, opacity: 1 },
+    animate: { x: "0%", opacity: 1, scale: 1 },
     exit: (dir: number) => ({
-      x: -dir * 300,
-      opacity: 0,
+      x: dir > 0 ? "-100%" : "100%",  // forward のときは左へ、backward のときは右へ
+      opacity: dir > 0 ? 0.6 : 1,
+      transition: { duration: 0.25 },
     }),
   };
 
   return (
-    <AnimatePresence initial={false} custom={direction}>
+    <AnimatePresence initial={false} mode="wait" custom={direction}>
       <motion.div
         key={pathname}
         custom={direction}
@@ -54,8 +55,16 @@ export default function ClientPageTransitionWrapper({ children }: Props) {
         initial="initial"
         animate="animate"
         exit="exit"
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        style={{ position: "absolute", width: "100%" }}
+        transition={{ type: "spring", stiffness: 260, damping: 30 }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 1000,
+          background: "#fff",
+        }}
       >
         {children}
       </motion.div>
