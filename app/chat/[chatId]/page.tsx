@@ -24,7 +24,7 @@ function getBgColor(name: string) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
   const h = hash % 360;
-  return `hsl(${h}, 70%, 90%)`;
+  return `hsl(${h}, 70%, 80%)`;
 }
 
 type Message = {

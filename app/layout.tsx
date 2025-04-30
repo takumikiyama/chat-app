@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PushRegistrar from "./components/PushRegistrar";
+import ClientPageTransitionWrapper from "./components/ClientPageTransitionWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Your App Title",
-  description: "Your app description",
+  title: "Glance",
+  description: "matching chat App",
   // これだけでも <meta name="theme-color"> は自動で出ます
   icons: {
     icon: "/icons/icon-192x192.png",
@@ -64,7 +65,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ClientPageTransitionWrapper>
+          {children}
+        </ClientPageTransitionWrapper>
+
         <PushRegistrar /> {/* ← ここでクライアント専用処理を走らせる */}
       </body>
     </html>
