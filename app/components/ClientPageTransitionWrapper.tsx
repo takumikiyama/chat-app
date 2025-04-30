@@ -12,58 +12,61 @@ interface Props {
 export default function ClientPageTransitionWrapper({ children }: Props) {
   const pathname = usePathname();
   const prevPathRef = useRef<string | null>(null);
-  const [direction, setDirection] = useState(0);
+  const [dir, setDir] = useState(0);
 
-  // どちらのパス→どちらのパスかを見て direction を +1 / -1 / 0 で決める
+  // 1) 前後のパスを見て dir を +1, -1, 0 にセット
   useEffect(() => {
     const prev = prevPathRef.current;
     if (prev && pathname) {
-      if (prev === "/chat-list" && pathname.startsWith("/chat/")) {
-        setDirection(+1);   // forward
-      } else if (
-        prev.startsWith("/chat/") &&
-        pathname === "/chat-list"
-      ) {
-        setDirection(-1);   // backward
+      const isChatList = prev === "/chat-list";
+      const isChatPage = /^\/chat\/[^/]+$/.test(prev);
+      const nextIsChatList = pathname === "/chat-list";
+      const nextIsChatPage = /^\/chat\/[^/]+$/.test(pathname);
+
+      if (isChatList && nextIsChatPage) {
+        setDir(+1);
+      } else if (isChatPage && nextIsChatList) {
+        setDir(-1);
       } else {
-        setDirection(0);
+        setDir(0);
       }
     }
     prevPathRef.current = pathname;
   }, [pathname]);
 
+  // 2) variants 定義
   const variants = {
-    initial: (dir: number) => ({
-      x: dir > 0 ? "100%" : "0%",  // backward は最初から画面上にいる
-      opacity: dir > 0 ? 0.6 : 1,
-      scale: dir > 0 ? 1.02 : 1,
-    }),
-    animate: { x: "0%", opacity: 1, scale: 1 },
-    exit: (dir: number) => ({
-      x: dir > 0 ? "-100%" : "100%",  // forward のときは左へ、backward のときは右へ
-      opacity: dir > 0 ? 0.6 : 1,
-      transition: { duration: 0.25 },
-    }),
+    initial: (d: number) => {
+      if (d === +1) return { x: "100%", opacity: 0.8 };
+      if (d === -1) return { x: "0%", opacity: 1 };
+      return { x: 0, opacity: 1 };
+    },
+    animate: { x: "0%", opacity: 1 },
+    exit: (d: number) => {
+      if (d === +1) return { x: "-100%", opacity: 0.8 };
+      if (d === -1) return { x: "100%", opacity: 1 };
+      return { x: 0, opacity: 1 };
+    },
   };
 
   return (
-    <AnimatePresence initial={false} mode="wait" custom={direction}>
+    <AnimatePresence initial={false} mode="wait" custom={dir}>
       <motion.div
         key={pathname}
-        custom={direction}
+        custom={dir}
         variants={variants}
         initial="initial"
         animate="animate"
         exit="exit"
-        transition={{ type: "spring", stiffness: 260, damping: 30 }}
+        transition={{ type: "tween", duration: 0.3 }}
         style={{
-          position: "fixed",
+          position: dir !== 0 ? "fixed" : "relative",
           top: 0,
           left: 0,
           width: "100%",
           height: "100%",
-          zIndex: 1000,
-          background: "#fff",
+          background: "#ffffff",
+          zIndex: dir !== 0 ? 1000 : "auto",
         }}
       >
         {children}
