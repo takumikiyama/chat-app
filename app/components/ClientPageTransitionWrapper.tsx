@@ -50,7 +50,7 @@ export default function ClientPageTransitionWrapper({ children }: Props) {
   };
 
   return (
-    <AnimatePresence initial={false} mode="wait" custom={dir}>
+    <AnimatePresence initial={false} mode="sync" custom={dir}>
       <motion.div
         key={pathname}
         custom={dir}
