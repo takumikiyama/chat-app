@@ -1,5 +1,5 @@
 "use client";
-import "next-pwa/register";
+// import "next-pwa/register";
 import { useEffect } from "react";
 import { subscribePush } from "@/app/lib/push";
 

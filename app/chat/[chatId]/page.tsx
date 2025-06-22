@@ -213,7 +213,7 @@ export default function Chat() {
       </main>
 
       {/* 入力欄 */}
-      <footer className="fixed bottom-4 left-0 right-0 bg-white px-4 py-3 shadow flex items-center">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white px-4 py-3 shadow flex items-center">
         <input
           ref={inputRef}
           type="text"
