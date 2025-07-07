@@ -7,6 +7,7 @@ import axios from "axios";
 import socket from "@/app/socket";
 import Image from "next/image";
 
+
 // ————————————————
 // ヘルパー：ユーザー名からイニシャルを生成
 function getInitials(name: string) {
@@ -44,6 +45,7 @@ export default function Chat() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [matchMessage, setMatchMessage] = useState<string>("");
+  const [isSending, setIsSending] = useState(false);
 
   // 1) ログインユーザーIDを取得
   useEffect(() => {
@@ -118,23 +120,44 @@ export default function Chat() {
 
   // 3) メッセージ送信
   const handleSend = async () => {
-    if (!chatId || !newMessage.trim()) return;
+    if (!chatId || !newMessage.trim() || isSending) return;
     const senderId = localStorage.getItem("userId");
     if (!senderId) {
       alert("ログインしてください");
       return;
     }
+
+    setIsSending(true); // ✅ フラグON（連打防止）
+    const contentToSend = newMessage;
+    setNewMessage("");
+
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      sender: { id: senderId, name: "自分" },
+      content: contentToSend,
+      createdAt: new Date().toISOString(),
+      formattedDate: new Date().toLocaleTimeString("ja-JP", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
+
     try {
       const res = await axios.post<Message>(`/api/chat/${chatId}`, {
         senderId,
-        content: newMessage,
+        content: contentToSend,
       });
+
       const msg = res.data;
       socket.emit("sendMessage", { chatId, message: msg });
-      setNewMessage("");
+
       inputRef.current?.focus();
     } catch (e) {
       console.error("🚨 送信エラー:", e);
+    } finally {
+      setIsSending(false); // ✅ 送信終了後にフラグOFF
     }
   };
 
@@ -219,16 +242,23 @@ export default function Chat() {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="メッセージを入力..."
+          placeholder="メッセージを入力"
           className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none"
         />
         <button
           onClick={handleSend}
-          className="bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition"
+          className="ml-2 p-2 rounded-full transition-transform duration-200 ease-out active:scale-150"
         >
-          送信
+          <Image
+            src={newMessage.trim() ? "/icons/send.png" : "/icons/message.png"}
+            alt="Send"
+            width={24}
+            height={24}
+          />
         </button>
       </footer>
+
+
 
       {/* 吹き出しのトゲ */}
       <style jsx>{`

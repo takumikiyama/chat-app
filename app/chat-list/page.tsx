@@ -38,11 +38,13 @@ function getBgColor(name: string) {
 export default function ChatList() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // API からチャット一覧を取得
   const fetchChats = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
+    setIsLoading(true);
     try {
       const res = await axios.get<ChatItem[]>("/api/chat-list", {
         headers: { userId },
@@ -65,6 +67,8 @@ export default function ChatList() {
       setChats(formatted);
     } catch (e) {
       console.error("🚨 チャットリスト取得エラー:", e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -121,43 +125,53 @@ export default function ChatList() {
 
       {/* チャット一覧スクロール領域 */}
       <div className="absolute top-16 bottom-14 left-0 right-0 overflow-y-auto p-3">
-        <ul className="space-y-0">
-          {chats.map((chat) => (
-            <li
-              key={chat.chatId}
-              onClick={() => router.push(`/chat/${chat.chatId}`)}
-              className="relative p-3 cursor-pointer rounded-lg flex items-center gap-3"
-            >
-              {/* アイコン */}
-              <div
-                className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
-                style={{ backgroundColor: getBgColor(chat.matchedUser.name) }}
+        {isLoading ? (
+          <div className="p-4 text-center text-gray-500">
+            読み込み中...
+          </div>
+        ) : chats.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            まだチャットをしたことがありません
+          </div>
+        ) : (
+          <ul className="space-y-0">
+            {chats.map((chat) => (
+              <li
+                key={chat.chatId}
+                onClick={() => router.push(`/chat/${chat.chatId}`)}
+                className="relative p-3 cursor-pointer rounded-lg flex items-center gap-3 transition-transform duration-200 ease-out active:scale-95"
               >
-                {getInitials(chat.matchedUser.name)}
-              </div>
+                {/* アイコン */}
+                <div
+                  className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: getBgColor(chat.matchedUser.name) }}
+                >
+                  {getInitials(chat.matchedUser.name)}
+                </div>
 
-              {/* 本文 */}
-              <div className="flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-base font-semibold text-black">
-                    {chat.matchedUser.name}
-                  </span>
+                {/* 本文 */}
+                <div className="flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-base font-semibold text-black">
+                      {chat.matchedUser.name}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-700 truncate">
+                    「{chat.matchMessage}」
+                  </div>
+                  <div className="text-sm text-gray-500 truncate">
+                    {chat.latestMessage}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-700 truncate">
-                  「{chat.matchMessage}」
-                </div>
-                <div className="text-sm text-gray-500 truncate">
-                  {chat.latestMessage}
-                </div>
-              </div>
 
-              {/* タイムスタンプ */}
-              <span className="absolute bottom-3 right-3 text-xs text-gray-400">
-                {chat.latestMessageAt}
-              </span>
-            </li>
-          ))}
-        </ul>
+                {/* タイムスタンプ */}
+                <span className="absolute top-3 right-3 text-xs text-gray-400">
+                  {chat.latestMessageAt}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* 下部タブバー */}

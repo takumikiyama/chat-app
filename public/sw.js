@@ -1,1 +1,129 @@
-importScripts("https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js"),workbox.precaching.precacheAndRoute([{'revision':'6246e9d07952e5f9c94fd4ca151a2bb1','url':'/_next/static/FT2n26C5qrgRnuTmVJDI4/_buildManifest.js'},{'revision':'b6652df95db52feb4daf4eca35380933','url':'/_next/static/FT2n26C5qrgRnuTmVJDI4/_ssgManifest.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/319-52e410bd3a311a71.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/368-9453f7680fcb3597.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/4bd1b696-927b5d87d2664d33.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/517-96c55c7a58de6b84.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/651-a3b1d7b8c04cfaab.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/738-a5d1ce047208c2bf.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/_not-found/page-c0cbad154ef2aa63.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/auth/login/route-b91ec3326f52ad40.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/auth/profile/route-8116b97a8f8583c3.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/auth/register/route-8098278208b63426.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/cancel-message/route-a1d99b8c0fd250d7.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/chat-list/route-ee0d85826172fb50.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/chat/%5BchatId%5D/route-bf8d0f5ae186f405.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/check-match/route-f876749f930e77ba.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/match-message/count/route-e651545d52b4998b.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/match-message/route-dbfc120f0774fe83.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/notifications/route-27d61818f818f550.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/push/subscribe/route-aea1196c0be22b39.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/push/unsubscribe/route-1a71f7a7c20e0b97.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/api/users/route-4374f26e23885053.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/chat-list/page-4abf8e493edd2a5b.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/chat/%5BchatId%5D/page-555d70e01c7643b9.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/layout-0a27d51f43ec739d.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/login/page-a70033f6c1b3b52f.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/main/page-d4c4259b7db52550.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/notifications/page-773fa8404d41a817.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/page-8d6162339d4c6d26.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/profile/page-6ed92915a752fd85.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/app/register/page-e8e922d57e970fa8.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/framework-6b27c2b7aa38af2d.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/main-app-0e644b163cc79822.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/main-dbafd64bd50ed2f6.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/pages/_app-162613c99c8dd058.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/pages/_error-0b1b330b04e6e2e5.js'},{'revision':'846118c33b2c0e922d7b3a7676f81f6f','url':'/_next/static/chunks/polyfills-42372ed130431b0a.js'},{'revision':'FT2n26C5qrgRnuTmVJDI4','url':'/_next/static/chunks/webpack-db3214c5c58110e1.js'},{'revision':'423a2276cd36d5fc','url':'/_next/static/css/423a2276cd36d5fc.css'},{'revision':'ef6cefb32024deac234e82f932a95cbd','url':'/_next/static/media/569ce4b8f30dc480-s.p.woff2'},{'revision':'a0761690ccf4441ace5cec893b82d4ab','url':'/_next/static/media/747892c23ea88013-s.woff2'},{'revision':'cc728f6c0adb04da0dfcb0fc436a8ae5','url':'/_next/static/media/8d697b304b401681-s.woff2'},{'revision':'da83d5f06d825c5ae65b7cca706cb312','url':'/_next/static/media/93f479601ee12b01-s.p.woff2'},{'revision':'7b7c0ef93df188a852344fc272fc096b','url':'/_next/static/media/9610d9e46709d722-s.woff2'},{'revision':'8ea4f719af3312a055caf09f34c89a77','url':'/_next/static/media/ba015fad6dcf6784-s.woff2'},{'revision':'6da67103467292f62a8680b30511f544','url':'/app_icon.PNG'},{'revision':'d09f95206c3fa0bb9bd9fefabfd0ea71','url':'/file.svg'},{'revision':'2aaafa6a49b6563925fe440891e32717','url':'/globe.svg'},{'revision':'ba1de695bc435586c1a3b7756943137c','url':'/icons/DS_Store'},{'revision':'f91621ea029fd8ae7f6cd5f3feefcaef','url':'/icons/apple-touch-icon.png'},{'revision':'f8d9aa027247a9bb72016a2093273990','url':'/icons/arrow-down.png'},{'revision':'84c9d6c0fb3efa679a9291d5c420a1dd','url':'/icons/back.png'},{'revision':'95b21c1af018d867796c77a68dd52f78','url':'/icons/chat blank.png'},{'revision':'ab5f9b0df1b33cf2799fcdd71e7926ca','url':'/icons/chat.png'},{'revision':'eeaec0f1434e8d5bbffaf1a7e979ff6d','url':'/icons/check.png'},{'revision':'ea75ebcedd3ca883522532d2fd2493f2','url':'/icons/check2.png'},{'revision':'ea75ebcedd3ca883522532d2fd2493f2','url':'/icons/check2.png 18-12-40-041.png'},{'revision':'94fe9f2bc1c059f27df2bbb19bb708e9','url':'/icons/delete.png'},{'revision':'2654d121461c7f7987d6d994a389e48d','url':'/icons/history.png'},{'revision':'56f8205850dc6a2e92c791a67e91da6f','url':'/icons/home blank.png'},{'revision':'ab32dc0c5e2c6111a8a52bf7adf9655d','url':'/icons/home.png'},{'revision':'97e2eea37083349f0cd96d23824a10ff','url':'/icons/icon-144x144.png'},{'revision':'c68164297c265d043f87ce12c14779bd','url':'/icons/icon-192x192.png'},{'revision':'3ef4e1a789c6f744b4b3a16debaff0a8','url':'/icons/icon-512x512.png'},{'revision':'cb6234d340fdce1beae3bb17a1a6df21','url':'/icons/notification.png'},{'revision':'da5a208e68ed31a4fd69bbdafcd7681c','url':'/icons/send.png'},{'revision':'7e6829497b229403db77bdc48c217736','url':'/icons/star blank.png'},{'revision':'9f97741dc2d21d647672c34daa916d7e','url':'/icons/star.png'},{'revision':'80b68ebba19b55175cebaf4189e28ede','url':'/manifest.json'},{'revision':'8e061864f388b47f33a1c3780831193e','url':'/next.svg'},{'revision':'f510eb40778a208c9e4e2cdb4e633d37','url':'/offline.html'},{'revision':'6e20b84e333d8a82d2f5c76eb9be6a94','url':'/sw.js'},{'revision':'c0af2f507b369b085b35ef4bbe3bcf1e','url':'/vercel.svg'},{'revision':'a2760511c65806022ad20adf74370ff3','url':'/window.svg'}]),self.addEventListener("push",t=>{let e=t.data.json();console.log("[SW] push payload:",e);let{type:i,chatId:o,title:n,body:l}=e;t.waitUntil(clients.matchAll({type:"window",includeUncontrolled:!0}).then(t=>{if(!t.some(t=>"message"===i&&t.url.includes("/chat/".concat(o))&&"visible"===t.visibilityState))return self.registration.showNotification(n,{body:l,tag:i+(o||""),data:e})}))}),self.addEventListener("notificationclick",t=>{t.notification.close();let{type:e,chatId:i}=t.notification.data,o="match"===e?"/notifications":"/chat/".concat(i);t.waitUntil(clients.matchAll({type:"window",includeUncontrolled:!0}).then(t=>{for(let e of t)if(e.url.includes(o))return e.focus();return clients.openWindow(o)}))});
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./service-worker.js":
+/*!***************************!*\
+  !*** ./service-worker.js ***!
+  \***************************/
+/***/ ((__webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval(__webpack_require__.ts("__webpack_require__.r(__webpack_exports__);\n/* service-worker.js */ /* global self, clients */ importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js');\nworkbox.precaching.precacheAndRoute([]);\n// プッシュ受信時のハンドラ\nself.addEventListener('push', (event)=>{\n    const payload = event.data.json();\n    console.log('[SW] push payload:', payload);\n    const { type, chatId, title, body } = payload;\n    event.waitUntil(clients.matchAll({\n        type: 'window',\n        includeUncontrolled: true\n    }).then((winClients)=>{\n        // チャット通知の場合、該当チャット画面が開いていれば抑制\n        const inChat = winClients.some((c)=>type === 'message' && c.url.includes(\"/chat/\".concat(chatId)) && c.visibilityState === 'visible');\n        if (inChat) return; // 開いていれば通知しない\n        // 通知を表示\n        return self.registration.showNotification(title, {\n            body,\n            tag: type + (chatId || ''),\n            data: payload\n        });\n    }));\n});\n// 通知クリック時のハンドラ\nself.addEventListener('notificationclick', (event)=>{\n    event.notification.close();\n    const { type, chatId } = event.notification.data;\n    const targetUrl = type === 'match' ? '/notifications' : \"/chat/\".concat(chatId);\n    event.waitUntil(clients.matchAll({\n        type: 'window',\n        includeUncontrolled: true\n    }).then((winClients)=>{\n        // すでに開いているタブがあればフォーカス\n        for (const client of winClients){\n            if (client.url.includes(targetUrl)) {\n                return client.focus();\n            }\n        }\n        // なければ新規ウィンドウを開く\n        return clients.openWindow(targetUrl);\n    }));\n});\n\n\n;\n    // Wrapped in an IIFE to avoid polluting the global scope\n    ;\n    (function () {\n        var _a, _b;\n        // Legacy CSS implementations will `eval` browser code in a Node.js context\n        // to extract CSS. For backwards compatibility, we need to check we're in a\n        // browser context before continuing.\n        if (typeof self !== 'undefined' &&\n            // AMP / No-JS mode does not inject these helpers:\n            '$RefreshHelpers$' in self) {\n            // @ts-ignore __webpack_module__ is global\n            var currentExports = __webpack_module__.exports;\n            // @ts-ignore __webpack_module__ is global\n            var prevSignature = (_b = (_a = __webpack_module__.hot.data) === null || _a === void 0 ? void 0 : _a.prevSignature) !== null && _b !== void 0 ? _b : null;\n            // This cannot happen in MainTemplate because the exports mismatch between\n            // templating and execution.\n            self.$RefreshHelpers$.registerExportsForReactRefresh(currentExports, __webpack_module__.id);\n            // A module can be accepted automatically based on its exports, e.g. when\n            // it is a Refresh Boundary.\n            if (self.$RefreshHelpers$.isReactRefreshBoundary(currentExports)) {\n                // Save the previous exports signature on update so we can compare the boundary\n                // signatures. We avoid saving exports themselves since it causes memory leaks (https://github.com/vercel/next.js/pull/53797)\n                __webpack_module__.hot.dispose(function (data) {\n                    data.prevSignature =\n                        self.$RefreshHelpers$.getRefreshBoundarySignature(currentExports);\n                });\n                // Unconditionally accept an update to this module, we'll check if it's\n                // still a Refresh Boundary later.\n                // @ts-ignore importMeta is replaced in the loader\n                /* unsupported import.meta.webpackHot */ undefined.accept();\n                // This field is set when the previous version of this module was a\n                // Refresh Boundary, letting us know we need to check for invalidation or\n                // enqueue an update.\n                if (prevSignature !== null) {\n                    // A boundary can become ineligible if its exports are incompatible\n                    // with the previous exports.\n                    //\n                    // For example, if you add/remove/change exports, we'll want to\n                    // re-execute the importing modules, and force those components to\n                    // re-render. Similarly, if you convert a class component to a\n                    // function, we want to invalidate the boundary.\n                    if (self.$RefreshHelpers$.shouldInvalidateReactRefreshBoundary(prevSignature, self.$RefreshHelpers$.getRefreshBoundarySignature(currentExports))) {\n                        __webpack_module__.hot.invalidate();\n                    }\n                    else {\n                        self.$RefreshHelpers$.scheduleUpdate();\n                    }\n                }\n            }\n            else {\n                // Since we just executed the code for the module, it's possible that the\n                // new exports made it ineligible for being a boundary.\n                // We only care about the case when we were _previously_ a boundary,\n                // because we already accepted this update (accidental side effect).\n                var isNoLongerABoundary = prevSignature !== null;\n                if (isNoLongerABoundary) {\n                    __webpack_module__.hot.invalidate();\n                }\n            }\n        }\n    })();\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiLi9zZXJ2aWNlLXdvcmtlci5qcyIsIm1hcHBpbmdzIjoiO0FBQUEscUJBQXFCLEdBQ3JCLHdCQUF3QixHQUN4QkEsY0FBYztBQUNkQyxRQUFRQyxVQUFVLENBQUNDLGdCQUFnQixDQUFDQyxLQUFLQyxhQUFhO0FBRXRELGVBQWU7QUFDZkQsS0FBS0UsZ0JBQWdCLENBQUMsUUFBUUMsQ0FBQUE7SUFDNUIsTUFBTUMsVUFBVUQsTUFBTUUsSUFBSSxDQUFDQyxJQUFJO0lBQy9CQyxRQUFRQyxHQUFHLENBQUMsc0JBQXNCSjtJQUNsQyxNQUFNLEVBQUVLLElBQUksRUFBRUMsTUFBTSxFQUFFQyxLQUFLLEVBQUVDLElBQUksRUFBRSxHQUFHUjtJQUV0Q0QsTUFBTVUsU0FBUyxDQUNiQyxRQUFRQyxRQUFRLENBQUM7UUFBRU4sTUFBTTtRQUFVTyxxQkFBcUI7SUFBSyxHQUFHQyxJQUFJLENBQUNDLENBQUFBO1FBQ25FLDhCQUE4QjtRQUM5QixNQUFNQyxTQUFTRCxXQUFXRSxJQUFJLENBQUNDLENBQUFBLElBQzdCWixTQUFTLGFBQ1RZLEVBQUVDLEdBQUcsQ0FBQ0MsUUFBUSxDQUFDLFNBQWdCLE9BQVBiLFlBQ3hCVyxFQUFFRyxlQUFlLEtBQUs7UUFFeEIsSUFBSUwsUUFBUSxRQUFVLGNBQWM7UUFFcEMsUUFBUTtRQUNSLE9BQU9uQixLQUFLeUIsWUFBWSxDQUFDQyxnQkFBZ0IsQ0FBQ2YsT0FBTztZQUMvQ0M7WUFDQWUsS0FBS2xCLE9BQVFDLENBQUFBLFVBQVUsRUFBQztZQUN4QkwsTUFBTUQ7UUFDUjtJQUNGO0FBRUo7QUFFQSxlQUFlO0FBQ2ZKLEtBQUtFLGdCQUFnQixDQUFDLHFCQUFxQkMsQ0FBQUE7SUFDekNBLE1BQU15QixZQUFZLENBQUNDLEtBQUs7SUFDeEIsTUFBTSxFQUFFcEIsSUFBSSxFQUFFQyxNQUFNLEVBQUUsR0FBR1AsTUFBTXlCLFlBQVksQ0FBQ3ZCLElBQUk7SUFDaEQsTUFBTXlCLFlBQVlyQixTQUFTLFVBQVUsbUJBQW1CLFNBQWdCLE9BQVBDO0lBRWpFUCxNQUFNVSxTQUFTLENBQ2JDLFFBQVFDLFFBQVEsQ0FBQztRQUFFTixNQUFNO1FBQVVPLHFCQUFxQjtJQUFLLEdBQUdDLElBQUksQ0FBQ0MsQ0FBQUE7UUFDbkUsc0JBQXNCO1FBQ3RCLEtBQUssTUFBTWEsVUFBVWIsV0FBWTtZQUMvQixJQUFJYSxPQUFPVCxHQUFHLENBQUNDLFFBQVEsQ0FBQ08sWUFBWTtnQkFDbEMsT0FBT0MsT0FBT0MsS0FBSztZQUNyQjtRQUNGO1FBQ0EsaUJBQWlCO1FBQ2pCLE9BQU9sQixRQUFRbUIsVUFBVSxDQUFDSDtJQUM1QjtBQUVKIiwic291cmNlcyI6WyIvVXNlcnMvdGFrdW1pa2l5YW1hL0RvY3VtZW50cy9HaXRIdWIvY2hhdC1hcHAvc2VydmljZS13b3JrZXIuanMiXSwic291cmNlc0NvbnRlbnQiOlsiLyogc2VydmljZS13b3JrZXIuanMgKi9cbi8qIGdsb2JhbCBzZWxmLCBjbGllbnRzICovXG5pbXBvcnRTY3JpcHRzKCdodHRwczovL3N0b3JhZ2UuZ29vZ2xlYXBpcy5jb20vd29ya2JveC1jZG4vcmVsZWFzZXMvNi41LjQvd29ya2JveC1zdy5qcycpO1xud29ya2JveC5wcmVjYWNoaW5nLnByZWNhY2hlQW5kUm91dGUoc2VsZi5fX1dCX01BTklGRVNUKTtcblxuLy8g44OX44OD44K344Ol5Y+X5L+h5pmC44Gu44OP44Oz44OJ44OpXG5zZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ3B1c2gnLCBldmVudCA9PiB7XG4gIGNvbnN0IHBheWxvYWQgPSBldmVudC5kYXRhLmpzb24oKTtcbiAgY29uc29sZS5sb2coJ1tTV10gcHVzaCBwYXlsb2FkOicsIHBheWxvYWQpO1xuICBjb25zdCB7IHR5cGUsIGNoYXRJZCwgdGl0bGUsIGJvZHkgfSA9IHBheWxvYWQ7XG5cbiAgZXZlbnQud2FpdFVudGlsKFxuICAgIGNsaWVudHMubWF0Y2hBbGwoeyB0eXBlOiAnd2luZG93JywgaW5jbHVkZVVuY29udHJvbGxlZDogdHJ1ZSB9KS50aGVuKHdpbkNsaWVudHMgPT4ge1xuICAgICAgLy8g44OB44Oj44OD44OI6YCa55+l44Gu5aC05ZCI44CB6Kmy5b2T44OB44Oj44OD44OI55S76Z2i44GM6ZaL44GE44Gm44GE44KM44Gw5oqR5Yi2XG4gICAgICBjb25zdCBpbkNoYXQgPSB3aW5DbGllbnRzLnNvbWUoYyA9PlxuICAgICAgICB0eXBlID09PSAnbWVzc2FnZScgJiZcbiAgICAgICAgYy51cmwuaW5jbHVkZXMoYC9jaGF0LyR7Y2hhdElkfWApICYmXG4gICAgICAgIGMudmlzaWJpbGl0eVN0YXRlID09PSAndmlzaWJsZSdcbiAgICAgICk7XG4gICAgICBpZiAoaW5DaGF0KSByZXR1cm47ICAgLy8g6ZaL44GE44Gm44GE44KM44Gw6YCa55+l44GX44Gq44GEXG5cbiAgICAgIC8vIOmAmuefpeOCkuihqOekulxuICAgICAgcmV0dXJuIHNlbGYucmVnaXN0cmF0aW9uLnNob3dOb3RpZmljYXRpb24odGl0bGUsIHtcbiAgICAgICAgYm9keSxcbiAgICAgICAgdGFnOiB0eXBlICsgKGNoYXRJZCB8fCAnJyksXG4gICAgICAgIGRhdGE6IHBheWxvYWQsXG4gICAgICB9KTtcbiAgICB9KVxuICApO1xufSk7XG5cbi8vIOmAmuefpeOCr+ODquODg+OCr+aZguOBruODj+ODs+ODieODqVxuc2VsZi5hZGRFdmVudExpc3RlbmVyKCdub3RpZmljYXRpb25jbGljaycsIGV2ZW50ID0+IHtcbiAgZXZlbnQubm90aWZpY2F0aW9uLmNsb3NlKCk7XG4gIGNvbnN0IHsgdHlwZSwgY2hhdElkIH0gPSBldmVudC5ub3RpZmljYXRpb24uZGF0YTtcbiAgY29uc3QgdGFyZ2V0VXJsID0gdHlwZSA9PT0gJ21hdGNoJyA/ICcvbm90aWZpY2F0aW9ucycgOiBgL2NoYXQvJHtjaGF0SWR9YDtcblxuICBldmVudC53YWl0VW50aWwoXG4gICAgY2xpZW50cy5tYXRjaEFsbCh7IHR5cGU6ICd3aW5kb3cnLCBpbmNsdWRlVW5jb250cm9sbGVkOiB0cnVlIH0pLnRoZW4od2luQ2xpZW50cyA9PiB7XG4gICAgICAvLyDjgZnjgafjgavplovjgYTjgabjgYTjgovjgr/jg5bjgYzjgYLjgozjgbDjg5Xjgqnjg7zjgqvjgrlcbiAgICAgIGZvciAoY29uc3QgY2xpZW50IG9mIHdpbkNsaWVudHMpIHtcbiAgICAgICAgaWYgKGNsaWVudC51cmwuaW5jbHVkZXModGFyZ2V0VXJsKSkge1xuICAgICAgICAgIHJldHVybiBjbGllbnQuZm9jdXMoKTtcbiAgICAgICAgfVxuICAgICAgfVxuICAgICAgLy8g44Gq44GR44KM44Gw5paw6KaP44Km44Kj44Oz44OJ44Km44KS6ZaL44GPXG4gICAgICByZXR1cm4gY2xpZW50cy5vcGVuV2luZG93KHRhcmdldFVybCk7XG4gICAgfSlcbiAgKTtcbn0pOyJdLCJuYW1lcyI6WyJpbXBvcnRTY3JpcHRzIiwid29ya2JveCIsInByZWNhY2hpbmciLCJwcmVjYWNoZUFuZFJvdXRlIiwic2VsZiIsIl9fV0JfTUFOSUZFU1QiLCJhZGRFdmVudExpc3RlbmVyIiwiZXZlbnQiLCJwYXlsb2FkIiwiZGF0YSIsImpzb24iLCJjb25zb2xlIiwibG9nIiwidHlwZSIsImNoYXRJZCIsInRpdGxlIiwiYm9keSIsIndhaXRVbnRpbCIsImNsaWVudHMiLCJtYXRjaEFsbCIsImluY2x1ZGVVbmNvbnRyb2xsZWQiLCJ0aGVuIiwid2luQ2xpZW50cyIsImluQ2hhdCIsInNvbWUiLCJjIiwidXJsIiwiaW5jbHVkZXMiLCJ2aXNpYmlsaXR5U3RhdGUiLCJyZWdpc3RyYXRpb24iLCJzaG93Tm90aWZpY2F0aW9uIiwidGFnIiwibm90aWZpY2F0aW9uIiwiY2xvc2UiLCJ0YXJnZXRVcmwiLCJjbGllbnQiLCJmb2N1cyIsIm9wZW5XaW5kb3ciXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///./service-worker.js\n"));
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			if (cachedModule.error !== undefined) throw cachedModule.error;
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			id: moduleId,
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		var threw = true;
+/******/ 		try {
+/******/ 			__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 			threw = false;
+/******/ 		} finally {
+/******/ 			if(threw) delete __webpack_module_cache__[moduleId];
+/******/ 		}
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/trusted types policy */
+/******/ 	(() => {
+/******/ 		var policy;
+/******/ 		__webpack_require__.tt = () => {
+/******/ 			// Create Trusted Type policy if Trusted Types are available and the policy doesn't exist yet.
+/******/ 			if (policy === undefined) {
+/******/ 				policy = {
+/******/ 					createScript: (script) => (script)
+/******/ 				};
+/******/ 				if (typeof trustedTypes !== "undefined" && trustedTypes.createPolicy) {
+/******/ 					policy = trustedTypes.createPolicy("nextjs#bundler", policy);
+/******/ 				}
+/******/ 			}
+/******/ 			return policy;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/trusted types script */
+/******/ 	(() => {
+/******/ 		__webpack_require__.ts = (script) => (__webpack_require__.tt().createScript(script));
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/react refresh */
+/******/ 	(() => {
+/******/ 		if (__webpack_require__.i) {
+/******/ 		__webpack_require__.i.push((options) => {
+/******/ 			const originalFactory = options.factory;
+/******/ 			options.factory = (moduleObject, moduleExports, webpackRequire) => {
+/******/ 				const hasRefresh = typeof self !== "undefined" && !!self.$RefreshInterceptModuleExecution$;
+/******/ 				const cleanup = hasRefresh ? self.$RefreshInterceptModuleExecution$(moduleObject.id) : () => {};
+/******/ 				try {
+/******/ 					originalFactory.call(this, moduleObject, moduleExports, webpackRequire);
+/******/ 				} finally {
+/******/ 					cleanup();
+/******/ 				}
+/******/ 			}
+/******/ 		})
+/******/ 		}
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
+/******/ 	
+/******/ 	// noop fns to prevent runtime errors during initialization
+/******/ 	if (typeof self !== "undefined") {
+/******/ 		self.$RefreshReg$ = function () {};
+/******/ 		self.$RefreshSig$ = function () {
+/******/ 			return function (type) {
+/******/ 				return type;
+/******/ 			};
+/******/ 		};
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module can't be inlined because the eval-source-map devtool is used.
+/******/ 	var __webpack_exports__ = __webpack_require__("./service-worker.js");
+/******/ 	
+/******/ })()
+;

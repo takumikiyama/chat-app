@@ -12,8 +12,11 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        'orange-350': '#fc9e58', // ← ここが追加部分！
       },
     },
   },
   plugins: [],
+  safelist: ['animate-slide-in']
 } satisfies Config;
+

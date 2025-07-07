@@ -11,13 +11,16 @@ interface Props {
 
 export default function ClientPageTransitionWrapper({ children }: Props) {
   const pathname = usePathname();
-  const prevRef = useRef<string | null>(null);
+  const prevPathRef = useRef<string | null>(null);
   const [dir, setDir] = useState(0);
 
-  // 前回のパスと今回のパスを比べて dir を +1, -1, 0 にセット
+  // 前回パス ↔ 今回パスを比較し、
+  // chat-list → chat/:id なら +1（右→左）
+  // chat/:id → chat-list なら -1（左→右）
+  // それ以外は 0（アニメーションなし）
   useEffect(() => {
-    const prev = prevRef.current;
-    if (prev && pathname) {
+    const prev = prevPathRef.current;
+    if (prev) {
       const wasList = prev === "/chat-list";
       const isList  = pathname === "/chat-list";
       const wasChat = /^\/chat\/[^/]+$/.test(prev);
@@ -27,14 +30,19 @@ export default function ClientPageTransitionWrapper({ children }: Props) {
       else if (wasChat && isList) setDir(-1);
       else                         setDir(0);
     }
-    prevRef.current = pathname;
+    prevPathRef.current = pathname;
   }, [pathname]);
 
-  // これだけで前進／戻りが一貫して動く！
+  // チャット関連ページ以外ならアニメーションを完全にスキップ
+  if (dir === 0) {
+    return <>{children}</>;
+  }
+
+  // dir に応じて x 軸スライドの向きを切り替える
   const variants = {
-    initial: (d: number) => ({ x: `${d * 100}%` }),
-    animate:            { x: "0%"         },
-    exit:    (d: number) => ({ x: `${-d * 100}%` }),
+    initial: (d: number) => ({ x: `${ d * 100 }%` }),
+    animate:          { x: "0%"               },
+    exit:    (d: number) => ({ x: `${-d * 100 }%` }),
   };
 
   return (
@@ -48,13 +56,13 @@ export default function ClientPageTransitionWrapper({ children }: Props) {
         exit="exit"
         transition={{ type: "tween", duration: 0.3 }}
         style={{
-          position:   dir !== 0 ? "fixed" : "relative",
+          position:   "fixed",
           top:        0,
           left:       0,
           width:      "100%",
           height:     "100%",
           background: "#ffffff",
-          zIndex:     dir !== 0 ? 1000 : "auto",
+          zIndex:     1000,
         }}
       >
         {children}
