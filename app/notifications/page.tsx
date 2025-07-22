@@ -115,7 +115,7 @@ export default function Notifications() {
   return (
     <div
       className={`
-        flex flex-col h-screen pt-1 px-5 pb-5 max-w-md mx-auto
+        flex flex-col h-[100dvh] pt-1 px-5 pb-5 max-w-md mx-auto overflow-hidden
         ${animateExit ? "animate-slide-out-left" : "animate-slide-in-left"}
       `}
       onTouchStart={handleTouchStart}

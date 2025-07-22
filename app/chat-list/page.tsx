@@ -1,22 +1,21 @@
-// app/chat-list/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import socket from "@/app/socket";
+import { useChatData } from "@/app/contexts/ChatDataContext";
 import FixedTabBar from "../components/FixedTabBar";
 
-// チャットリストアイテム型
-interface ChatItem {
+// チャットリストアイテムの型定義
+export interface ChatItem {
   chatId: string;
   matchedUser: { id: string; name: string };
   matchMessage: string;
   latestMessage: string;
-  latestMessageAt: string; // フォーマット済み日時文字列
+  latestMessageAt: string; // フォーマット済み日時
 }
 
-// イニシャル生成
+// ユーザー名からイニシャル生成
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -25,7 +24,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-// 背景色ハッシュ
+// ユーザー名から背景色ハッシュ
 function getBgColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -37,10 +36,13 @@ function getBgColor(name: string) {
 
 export default function ChatList() {
   const router = useRouter();
-  const [chats, setChats] = useState<ChatItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { chatList, setChatList } = useChatData();
 
-  // API からチャット一覧を取得
+  // キャッシュがあれば初期値に、なければ空配列
+  const [chats, setChats] = useState<ChatItem[]>(chatList || []);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // チャット一覧取得＆キャッシュ更新
   const fetchChats = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
@@ -65,6 +67,7 @@ export default function ChatList() {
             new Date(a.latestMessageAt).getTime()
         );
       setChats(formatted);
+      setChatList(formatted);
     } catch (e) {
       console.error("🚨 チャットリスト取得エラー:", e);
     } finally {
@@ -73,73 +76,30 @@ export default function ChatList() {
   };
 
   useEffect(() => {
+    // キャッシュがあれば即表示、その後更新
     fetchChats();
-
-    const handleNewMessage = (payload: {
-      chatId: string;
-      message: { content: string; createdAt: string; sender: { name: string } };
-    }) => {
-      setChats((prev) => {
-        const updated = prev.map((chat) =>
-          chat.chatId === payload.chatId
-            ? {
-                ...chat,
-                latestMessage: payload.message.content,
-                latestMessageAt: new Date(
-                  payload.message.createdAt
-                ).toLocaleString("ja-JP", {
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-              }
-            : chat
-        );
-        return updated.sort(
-          (a, b) =>
-            new Date(b.latestMessageAt).getTime() -
-            new Date(a.latestMessageAt).getTime()
-        );
-      });
-    };
-    socket.on("newMessage", handleNewMessage);
-
-    const handleNewMatch = () => {
-      fetchChats();
-    };
-    socket.on("newMatch", handleNewMatch);
-
-    return () => {
-      socket.off("newMessage", handleNewMessage);
-      socket.off("newMatch", handleNewMatch);
-    };
   }, []);
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-white">
-      {/* ヘッダー */}
-      <div className="fixed top-0 left-0 right-0 bg-white z-10 p-4">
+    <div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
+      {/* 固定ヘッダー */}
+      <div className="shrink-0 bg-white z-10 p-4 border-b">
         <h1 className="text-2xl font-bold text-center">Chat</h1>
       </div>
 
-      {/* チャット一覧スクロール領域 */}
-      <div className="absolute top-16 bottom-14 left-0 right-0 overflow-y-auto p-3">
-        {isLoading ? (
-          <div className="p-4 text-center text-gray-500">
-            読み込み中...
-          </div>
+      {/* スクロール可能リスト */}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        {isLoading && chats.length === 0 ? (
+          <p className="text-center text-gray-500">読み込み中…</p>
         ) : chats.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            まだチャットをしたことがありません
-          </div>
+          <p className="text-center text-gray-500">まだチャットがありません</p>
         ) : (
-          <ul className="space-y-0">
+          <ul className="space-y-2 pb-20">
             {chats.map((chat) => (
               <li
                 key={chat.chatId}
                 onClick={() => router.push(`/chat/${chat.chatId}`)}
-                className="relative p-3 cursor-pointer rounded-lg flex items-center gap-3 transition-transform duration-200 ease-out active:scale-95"
+                className="relative p-3 cursor-pointer border rounded-lg flex items-center gap-3 transition-transform duration-200 ease-out active:scale-95"
               >
                 {/* アイコン */}
                 <div
@@ -156,12 +116,12 @@ export default function ChatList() {
                       {chat.matchedUser.name}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-700 truncate">
+                  <p className="text-sm text-gray-700 truncate">
                     「{chat.matchMessage}」
-                  </div>
-                  <div className="text-sm text-gray-500 truncate">
+                  </p>
+                  <p className="text-sm text-gray-500 truncate">
                     {chat.latestMessage}
-                  </div>
+                  </p>
                 </div>
 
                 {/* タイムスタンプ */}
@@ -175,7 +135,9 @@ export default function ChatList() {
       </div>
 
       {/* 下部タブバー */}
-      <FixedTabBar />
+      <div className="shrink-0">
+        <FixedTabBar />
+      </div>
     </div>
   );
 }

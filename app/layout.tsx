@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
 import PushRegistrar from "./components/PushRegistrar";
 import ClientPageTransitionWrapper from "./components/ClientPageTransitionWrapper";
+import { ChatDataProvider } from "@/app/contexts/ChatDataContext";
 
+// フォント設定
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -13,6 +16,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// メタ情報
 export const metadata: Metadata = {
   title: "Glance",
   description: "matching chat App",
@@ -23,13 +27,14 @@ export const metadata: Metadata = {
   },
 };
 
+// RootLayout本体
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link
@@ -55,9 +60,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ClientPageTransitionWrapper>
-          {children}
-        </ClientPageTransitionWrapper>
+        <ChatDataProvider>
+          <ClientPageTransitionWrapper>{children}</ClientPageTransitionWrapper>
+        </ChatDataProvider>
         <PushRegistrar />
       </body>
     </html>

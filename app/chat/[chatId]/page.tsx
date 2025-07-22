@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import socket from "@/app/socket";
 import Image from "next/image";
-
+import { useChatData } from "@/app/contexts/ChatDataContext";
 
 // ————————————————
 // ヘルパー：ユーザー名からイニシャルを生成
@@ -28,7 +28,7 @@ function getBgColor(name: string) {
   return `hsl(${h}, 70%, 80%)`;
 }
 
-type Message = {
+export type Message = {
   id: string;
   sender: { id: string; name: string };
   content: string;
@@ -39,52 +39,71 @@ type Message = {
 export default function Chat() {
   const router = useRouter();
   const { chatId } = useParams();
+  const { chatData } = useChatData();
+  const initialMessages = chatData[chatId as string] as Message[] | undefined;
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [matchMessage, setMatchMessage] = useState<string>("");
   const [isSending, setIsSending] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   // 1) ログインユーザーIDを取得
   useEffect(() => {
     setCurrentUserId(localStorage.getItem("userId"));
   }, []);
 
-  // 2) チャット情報取得 & ルーム参加 & リアルタイム受信登録
+  // 2) 事前フェッチされたデータがあれば即セット
+  useEffect(() => {
+    if (initialMessages) {
+      const formatted = initialMessages.map((msg) => ({
+        ...msg,
+        formattedDate: new Date(msg.createdAt).toLocaleString("ja-JP", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+      setMessages(formatted);
+    }
+  }, [initialMessages]);
+
+  // 3) 必要ならAPIから取得、マッチメッセージ取得、Socket接続
   useEffect(() => {
     if (!chatId) return;
-
-    // 過去メッセージ取得
-    (async () => {
-      try {
-        const res = await axios.get<Message[]>(`/api/chat/${chatId}`);
-        const formatted = res.data.map((msg) => ({
-          ...msg,
-          formattedDate: new Date(msg.createdAt).toLocaleString("ja-JP", {
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        }));
-        setMessages(formatted);
-      } catch (e) {
-        console.error("🚨 メッセージ取得エラー:", e);
-      }
-    })();
+    // 既に初期データがあれば取得をスキップ
+    if (!initialMessages) {
+      (async () => {
+        try {
+          const res = await axios.get<Message[]>(`/api/chat/${chatId}`);
+          const formatted = res.data.map((msg) => ({
+            ...msg,
+            formattedDate: new Date(msg.createdAt).toLocaleString("ja-JP", {
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          }));
+          setMessages(formatted);
+        } catch (e) {
+          console.error("🚨 メッセージ取得エラー:", e);
+        }
+      })();
+    }
 
     // MatchPair からマッチメッセージ取得
     (async () => {
       try {
         const userId = localStorage.getItem("userId");
         if (!userId) return;
-        const res = await axios.get<{
-          chatId: string;
-          matchedUser: { id: string; name: string };
-          matchMessage: string;
-        }[]>("/api/chat-list", { headers: { userId } });
+        const res = await axios.get<
+          { chatId: string; matchedUser: { id: string; name: string }; matchMessage: string }[]
+        >("/api/chat-list", { headers: { userId } });
         const chat = res.data.find((c) => c.chatId === chatId);
         setMatchMessage(chat?.matchMessage || "");
       } catch (e) {
@@ -96,10 +115,7 @@ export default function Chat() {
     socket.emit("joinChat", chatId);
 
     // 新着メッセージ受信
-    const handleNewMessage = (payload: {
-      chatId: string;
-      message: Message;
-    }) => {
+    const handleNewMessage = (payload: { chatId: string; message: Message }) => {
       if (payload.chatId !== chatId) return;
       const { message } = payload;
       const formatted: Message = {
@@ -116,9 +132,14 @@ export default function Chat() {
     return () => {
       socket.off("newMessage", handleNewMessage);
     };
-  }, [chatId]);
+  }, [chatId, initialMessages]);
 
-  // 3) メッセージ送信
+  // 4) メッセージ更新時に自動スクロール
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // 5) メッセージ送信
   const handleSend = async () => {
     if (!chatId || !newMessage.trim() || isSending) return;
     const senderId = localStorage.getItem("userId");
@@ -127,10 +148,11 @@ export default function Chat() {
       return;
     }
 
-    setIsSending(true); // ✅ フラグON（連打防止）
+    setIsSending(true);
     const contentToSend = newMessage;
     setNewMessage("");
 
+    // 仮表示
     const tempMessage: Message = {
       id: `temp-${Date.now()}`,
       sender: { id: senderId, name: "自分" },
@@ -141,7 +163,6 @@ export default function Chat() {
         minute: "2-digit",
       }),
     };
-
     setMessages((prev) => [...prev, tempMessage]);
 
     try {
@@ -149,24 +170,16 @@ export default function Chat() {
         senderId,
         content: contentToSend,
       });
-
-      const msg = res.data;
-      socket.emit("sendMessage", { chatId, message: msg });
-
+      socket.emit("sendMessage", { chatId, message: res.data });
       inputRef.current?.focus();
     } catch (e) {
       console.error("🚨 送信エラー:", e);
     } finally {
-      setIsSending(false); // ✅ 送信終了後にフラグOFF
+      setIsSending(false);
     }
   };
 
-  // 4) 自動スクロール
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // 5) ヘッダー用データ取得
+  // 6) ヘッダー表示用
   const partner = messages.find((m) => m.sender.id !== currentUserId);
   const partnerName = partner?.sender.name || "チャット";
 
@@ -174,23 +187,20 @@ export default function Chat() {
     <div className="flex flex-col bg-white h-screen">
       {/* ヘッダー */}
       <header className="sticky top-0 z-10 bg-white px-4 py-2 flex flex-col items-center">
-        {/* ← アイコン */}
         <button
           onClick={() => router.push("/chat-list")}
           className="absolute left-4 top-2 focus:outline-none"
         >
           <Image src="/icons/back.png" alt="Back" width={20} height={20} />
         </button>
-        {/* ユーザー名 */}
         <h1 className="text-base font-bold text-black">{partnerName}</h1>
-        {/* マッチメッセージ */}
         {matchMessage && (
           <p className="text-sm text-gray-700 mt-1">「{matchMessage}」</p>
         )}
       </header>
 
       {/* メッセージ一覧 */}
-      <main className="flex-1 px-4 overflow-y-auto pb-20">
+      <main className="flex-1 px-4 overflow-y-auto pb-32">
         <div className="space-y-3 py-2">
           {messages.map((msg) => {
             const isMe = msg.sender.id === currentUserId;
@@ -232,7 +242,7 @@ export default function Chat() {
             );
           })}
         </div>
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-6" />
       </main>
 
       {/* 入力欄 */}
@@ -257,8 +267,6 @@ export default function Chat() {
           />
         </button>
       </footer>
-
-
 
       {/* 吹き出しのトゲ */}
       <style jsx>{`
