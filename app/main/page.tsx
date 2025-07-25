@@ -5,26 +5,13 @@ import axios from 'axios'
 import Image from 'next/image'
 import FixedTabBar from '../components/FixedTabBar'
 import { useRouter } from 'next/navigation'
+import { useChatData } from '../contexts/ChatDataContext'
 
 interface User {
   id: string
   name: string
   bio: string
 }
-
-const MESSAGES = [
-  '😆',
-  'ひゃああああ',
-  '夏、海行きてえ',
-  '研究いいかんじですか？',
-  '出かけましょうか',
-  'おい',
-  'あ',
-  'お',
-  'い',
-  'え',
-  'か'
-]
 
 function getInitials(name: string) {
   return name
@@ -52,6 +39,54 @@ function getBgColor(name: string) {
   return `hsl(${h}, 70%, 80%)`
 }
 
+type PresetMessage = {
+  id: string
+  content: string
+  createdBy: string
+  createdAt: string
+  count: number
+}
+
+// チャットリスト用 日付・時刻・曜日表示関数
+function formatChatDate(dateString: string | null): string {
+  if (!dateString) return ''
+  const now = new Date()
+  const date = new Date(dateString)
+  // 当日
+  if (
+    now.getFullYear() === date.getFullYear() &&
+    now.getMonth() === date.getMonth() &&
+    now.getDate() === date.getDate()
+  ) {
+    return `${date.getHours()}:${date.getMinutes()}`
+  }
+  // 昨日
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate()
+  ) {
+    return '昨日'
+  }
+  // 2〜5日前は曜日
+  for (let i = 2; i <= 5; i++) {
+    const prev = new Date(now)
+    prev.setDate(now.getDate() - i)
+    if (
+      date.getFullYear() === prev.getFullYear() &&
+      date.getMonth() === prev.getMonth() &&
+      date.getDate() === prev.getDate()
+    ) {
+      const week = ['日', '月', '火', '水', '木', '金', '土']
+      return week[date.getDay()]
+    }
+  }
+  // 6日前以前は月/日
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
 export default function Main() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [users, setUsers] = useState<User[]>([])
@@ -64,6 +99,12 @@ export default function Main() {
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [isHistoryNavigating, setIsHistoryNavigating] = useState(false)
   const router = useRouter()
+  const [isInputMode, setIsInputMode] = useState(false)
+  const [inputMessage, setInputMessage] = useState('')
+  const [inputSending, setInputSending] = useState(false)
+  const [presetMessages, setPresetMessages] = useState<PresetMessage[]>([])
+  const [isSending, setIsSending] = useState(false)
+  const { setChatList } = useChatData()
 
   useEffect(() => {
     const uid = localStorage.getItem('userId')
@@ -85,6 +126,32 @@ export default function Main() {
       .catch((e) => console.error('ユーザー取得エラー:', e))
   }, [])
 
+  // プリセットメッセージ取得
+  useEffect(() => {
+    fetch('/api/preset-message')
+      .then((res) => res.json())
+      .then((data) => {
+        setPresetMessages(data)
+      })
+  }, [])
+
+  // チャットリストをプリフェッチ
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    if (!userId) return
+    axios
+      .get('/api/chat-list', { headers: { userId } })
+      .then((res) => {
+        // 日付・時刻を整形して保存
+        const formatted = res.data.map((c: any) => ({
+          ...c,
+          latestMessageAtDisplay: formatChatDate(c.latestMessageAt)
+        }))
+        setChatList(formatted)
+      })
+      .catch((e) => console.error('チャットリスト取得エラー:', e))
+  }, [setChatList])
+
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX)
   }
@@ -93,7 +160,7 @@ export default function Main() {
     if (touchStartX === null) return
     const touchEndX = e.changedTouches[0].clientX
     const deltaX = touchEndX - touchStartX
-    const SWIPE_THRESHOLD = 50
+    const SWIPE_THRESHOLD = 100
 
     if (deltaX < -SWIPE_THRESHOLD && step === 'select-message') {
       setStep('select-recipients')
@@ -113,31 +180,70 @@ export default function Main() {
 
   const handleSelectMessage = (msg: string) => {
     setSelectedMessage((prev) => (prev === msg ? null : msg))
+    setInputMessage('') // ことばを選択したら入力欄をクリア
   }
 
   const toggleRecipient = (id: string) => {
     setSelectedRecipientIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
+  // メッセージ選択肢（初期MESSAGES＋プリセットメッセージ）
+  const messageOptions = [...presetMessages]
+
+  // 送信待機バーのmessage.pngタップ時の処理
+  const handleMessageIconClick = () => {
+    if (isInputMode && inputMessage.trim()) {
+      setSelectedMessage(inputMessage.trim())
+      setIsInputMode(false)
+      setStep('select-recipients')
+    } else if (selectedMessage) {
+      setStep('select-recipients')
+    }
+  }
+
+  // send.pngタップ時の処理
   const handleSend = async () => {
-    if (!selectedMessage || selectedRecipientIds.length === 0 || !currentUserId) {
-      alert('メッセージと送信相手を選択してください。')
+    if (!selectedMessage || selectedRecipientIds.length === 0 || !currentUserId || isSending) {
       return
     }
-
-    setSentMessageInfo({ message: selectedMessage, recipients: selectedRecipientIds })
+    setIsSending(true)
+    // 送信完了通知を即時表示
+    setSentMessageInfo({ message: selectedMessage, recipients: [...selectedRecipientIds] })
     setIsSent(true)
+    // 送信待機バーの情報を即リセット
+    const messageToSend = selectedMessage
+    const recipientsToSend = [...selectedRecipientIds]
     setSelectedMessage(null)
     setSelectedRecipientIds([])
     setStep('select-message')
-
+    setIsInputMode(false)
+    setInputMessage('')
     try {
+      // 新規ことばの場合のみAPIにPOST
+      const isPreset = presetMessages.some((m) => m.content === messageToSend)
+      if (!isPreset) {
+        const res = await fetch('/api/preset-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: messageToSend, createdBy: currentUserId })
+        })
+        if (res.ok) {
+          // プリセットメッセージリストを再取得
+          const data = await fetch('/api/preset-message').then((r) => r.json())
+          setPresetMessages(data as PresetMessage[])
+        } else {
+          alert('ことばの登録に失敗しました')
+          setIsSending(false)
+          setIsSent(false)
+          setSentMessageInfo(null)
+          return
+        }
+      }
       await axios.post('/api/match-message', {
         senderId: currentUserId,
-        receiverIds: selectedRecipientIds,
-        message: selectedMessage
+        receiverIds: recipientsToSend,
+        message: messageToSend
       })
-
       if (navigator.vibrate) navigator.vibrate([200, 100, 200])
       setTimeout(() => {
         setIsSent(false)
@@ -148,15 +254,40 @@ export default function Main() {
       alert('メッセージの送信に失敗しました')
       setIsSent(false)
       setSentMessageInfo(null)
+    } finally {
+      setIsSending(false)
     }
   }
 
+  // 新規メッセージ送信（プリセット登録）
+  const handleInputSend = async () => {
+    if (!inputMessage.trim() || !currentUserId) return
+    setInputSending(true)
+    try {
+      const res = await fetch('/api/preset-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: inputMessage, createdBy: currentUserId })
+      })
+      if (res.ok) {
+        // 新規メッセージを即時選択肢に反映
+        setSelectedMessage(inputMessage)
+        setIsInputMode(false)
+        setInputMessage('')
+        // 必要ならMESSAGESやプリセット一覧を再取得
+      } else {
+        alert('作成に失敗しました')
+      }
+    } finally {
+      setInputSending(false)
+    }
+  }
+
+  // 送信ボタンの条件
+  const canSend = selectedMessage && selectedRecipientIds.length > 0
+
   return (
-    <div
-      className={`flex flex-col h-screen transition-transform duration-300 ${
-        isHistoryNavigating ? 'translate-x-full' : ''
-      }`}
-    >
+    <>
       {/* ヘッダー */}
       <div className="fixed top-0 left-0 w-full bg-white z-10 p-4 flex flex-col items-center overflow-hidden">
         <div className="flex w-full justify-between items-center">
@@ -178,14 +309,13 @@ export default function Main() {
           <div className="w-24" />
         </div>
         <p className="text-sm text-gray-800 text-center leading-snug mt-4">
-          お互いが同じことばをシェアし合ったら初めて通知され、チャットができます。 今日は <strong>{matchCount}</strong>{' '}
-          件受信済。
+          お互いが同じことばをシェアし合ったら初めて通知されます。今日は <strong>{matchCount}</strong> 件受信済。
         </p>
       </div>
 
       {/* ── 送信待機バー ── */}
       <div
-        className={`fixed top-24 left-4 right-4 z-20 py-3 flex items-center h-18 pl-5 pr-4 shadow rounded-3xl overflow-hidden
+        className={`fixed top-24 left-4 right-4 z-20 py-1 flex items-center h-16 pl-2 pr-2 shadow rounded-xl overflow-hidden
           ${
             selectedMessage && selectedRecipientIds.length > 0
               ? 'bg-orange-500'
@@ -195,13 +325,39 @@ export default function Main() {
           }
         `}
       >
-        <div className="flex-1 flex flex-col justify-between h-full overflow-x-auto pr-6">
-          <span
-            onClick={() => setSelectedMessage(null)}
-            className={`${selectedMessage ? 'font-bold text-white' : 'text-gray-100'}`}
-          >
-            {selectedMessage || 'ことばを選んでください'}
-          </span>
+        <div className="flex-1 flex flex-col justify-between h-full overflow-x-auto pr-2">
+          {!selectedMessage || !messageOptions.some((m) => m.content === selectedMessage) ? (
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Aa..."
+              className="flex-1 px-2 py-1 rounded border text-base"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputMessage.trim()) {
+                  setSelectedMessage(inputMessage.trim())
+                  setIsInputMode(false)
+                  setStep('select-recipients')
+                }
+              }}
+              onBlur={(e) => {
+                if (inputMessage.trim()) {
+                  setSelectedMessage(inputMessage.trim())
+                  setIsInputMode(false)
+                  setStep('select-recipients')
+                }
+              }}
+            />
+          ) : (
+            <span
+              onClick={() => {
+                setSelectedMessage(null)
+              }}
+              className={`${selectedMessage ? 'font-bold text-white' : 'text-gray-100'} cursor-pointer`}
+            >
+              {selectedMessage}
+            </span>
+          )}
           <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide">
             {selectedRecipientIds.length > 0 ? (
               selectedRecipientIds.map((id, idx) => {
@@ -214,22 +370,18 @@ export default function Main() {
                 )
               })
             ) : (
-              <span className="text-gray-200">シェアするともだちを選んでください</span>
+              <span className="text-gray-200">誰に送る？</span>
             )}
           </div>
         </div>
         <button
-          onClick={() => {
-            if (!selectedMessage || selectedRecipientIds.length === 0) {
-              setStep(!selectedMessage ? 'select-message' : 'select-recipients')
-              return
-            }
-            handleSend()
-          }}
-          className="flex-none px-2 py-1 transition-transform duration-200 ease-out active:scale-150 focus:outline-none"
+          onClick={canSend ? handleSend : handleMessageIconClick}
+          className="flex-none px-1 py-1 transition-transform duration-200 ease-out active:scale-150 focus:outline-none"
+          disabled={!canSend || isSending}
+          style={{ minWidth: 36, minHeight: 36 }}
         >
           <Image
-            src={selectedMessage && selectedRecipientIds.length > 0 ? '/icons/send.png' : '/icons/message.png'}
+            src={canSend ? '/icons/send.png' : '/icons/message.png'}
             alt="send"
             width={24}
             height={24}
@@ -252,24 +404,31 @@ export default function Main() {
           }}
         >
           {/* メッセージ選択 */}
-          <div className="min-w-full flex-shrink-0 text-lg overflow-y-auto px-5 pt-[180px] pb-[190px]">
+          <div
+            className="min-w-full flex-shrink-0 text-lg overflow-y-auto px-5 pt-[180px] pb-[40px]"
+            style={{ maxHeight: 'calc(100vh - 140px)' }}
+          >
             <div className="flex flex-col gap-3">
-              {MESSAGES.map((msg) => (
+              {messageOptions.map((msg) => (
                 <button
-                  key={msg}
-                  onClick={() => handleSelectMessage(msg)}
-                  className={`w-full text-left px-4 py-3 rounded-3xl shadow transition-transform duration-100 ease-out active:scale-95 ${
-                    selectedMessage === msg ? 'font-bold text-black bg-gray-300' : 'text-gray-700'
+                  key={msg.id}
+                  onClick={() => handleSelectMessage(msg.content)}
+                  className={`w-full flex justify-between items-center text-left px-4 py-3 rounded-3xl shadow transition-transform duration-100 ease-out active:scale-95 ${
+                    selectedMessage === msg.content ? 'font-bold text-black bg-gray-300' : 'text-gray-700'
                   }`}
                 >
-                  {msg}
+                  <span>{msg.content}</span>
+                  <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">{msg.count}回シェアされました</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* 送信先選択 */}
-          <div className="min-w-full flex-shrink-0 text-lg overflow-y-auto px-5 pt-[180px] pb-[190px]">
+          <div
+            className="min-w-full flex-shrink-0 text-lg overflow-y-auto px-5 pt-[180px] pb-[40px]"
+            style={{ maxHeight: 'calc(100vh - 140px)' }}
+          >
             <div className="flex flex-col gap-2">
               {users
                 .filter((u) => u.id !== currentUserId)
@@ -347,6 +506,6 @@ export default function Main() {
 
       {/* 下部タブバー */}
       <FixedTabBar />
-    </div>
+    </>
   )
 }

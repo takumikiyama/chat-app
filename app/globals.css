@@ -15,14 +15,11 @@ body {
 
 @keyframes slide-in {
   0% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  10% {
+    transform: translateX(0);
     opacity: 1;
   }
-  80% {
-    transform: translateX(-100%);
+  20% {
+    transform: translateX(0);
     opacity: 1;
   }
   100% {
@@ -32,7 +29,7 @@ body {
 }
 
 .animate-slide-in {
-  animation: slide-in 6s linear forwards;
+  animation: slide-in 8s linear forwards;
 }
 
 .neon-gradient {
