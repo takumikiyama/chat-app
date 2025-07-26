@@ -15,6 +15,7 @@ export interface ChatItem {
   latestMessageAt: string // フォーマット済み日時
   latestMessageAtRaw: string // 生の日時文字列
   latestMessageSenderId: string // 最新メッセージの送信者ID
+  latestMessageAtDisplay?: string // プリフェッチ時に整形済みの日時表示
 }
 
 // ユーザー名からイニシャル生成
@@ -83,10 +84,33 @@ export default function ChatList() {
   const [unreadCounts, setUnreadCounts] = useState<{ [chatId: string]: number }>({})
   const [userId, setUserId] = useState<string | null>(null)
 
-  // チャット一覧取得＆キャッシュ更新
+  // Contextからチャットリストを取得し、必要に応じてAPIから更新
   const fetchChats = async () => {
     const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
     if (!userId) return
+
+    // Contextにデータがある場合はそれを使用
+    if (chatList && chatList.length > 0) {
+      setChats(chatList)
+      // 未読件数計算のみ実行
+      const unread: { [chatId: string]: number } = {}
+      for (const chat of chatList) {
+        if (!chat.latestMessageAt || chat.latestMessage === 'メッセージなし') continue
+        // 送信者が自分なら未読0
+        if (chat.latestMessageSenderId === userId) {
+          unread[chat.chatId] = 0
+          continue
+        }
+        const lastRead = localStorage.getItem(`chat-last-read-${chat.chatId}`)
+        const lastReadTime = lastRead ? new Date(lastRead).getTime() : 0
+        const latestMsgTime = chat.latestMessageAt ? new Date(chat.latestMessageAt).getTime() : 0
+        unread[chat.chatId] = latestMsgTime > lastReadTime ? 1 : 0
+      }
+      setUnreadCounts(unread)
+      return
+    }
+
+    // Contextにデータがない場合のみAPIから取得
     setIsLoading(true)
     try {
       const res = await axios.get<ChatItem[]>('/api/chat-list', {
@@ -182,7 +206,7 @@ export default function ChatList() {
                       <span className="text-base font-semibold text-black truncate">{chat.matchedUser.name}</span>
                       <div className="flex flex-col items-end min-w-[56px]">
                         <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                          {formatChatDate(chat.latestMessageAtRaw)}
+                          {chat.latestMessageAtDisplay || formatChatDate(chat.latestMessageAtRaw)}
                         </span>
                         {/* 未読バッジ */}
                         {unreadCounts[chat.chatId] > 0 && !isLatestFromMe && (

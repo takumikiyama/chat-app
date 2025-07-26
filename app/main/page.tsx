@@ -5,7 +5,6 @@ import axios from 'axios'
 import Image from 'next/image'
 import FixedTabBar from '../components/FixedTabBar'
 import { useRouter } from 'next/navigation'
-import { useChatData } from '../contexts/ChatDataContext'
 
 interface User {
   id: string
@@ -48,44 +47,6 @@ type PresetMessage = {
 }
 
 // チャットリスト用 日付・時刻・曜日表示関数
-function formatChatDate(dateString: string | null): string {
-  if (!dateString) return ''
-  const now = new Date()
-  const date = new Date(dateString)
-  // 当日
-  if (
-    now.getFullYear() === date.getFullYear() &&
-    now.getMonth() === date.getMonth() &&
-    now.getDate() === date.getDate()
-  ) {
-    return `${date.getHours()}:${date.getMinutes()}`
-  }
-  // 昨日
-  const yesterday = new Date(now)
-  yesterday.setDate(now.getDate() - 1)
-  if (
-    date.getFullYear() === yesterday.getFullYear() &&
-    date.getMonth() === yesterday.getMonth() &&
-    date.getDate() === yesterday.getDate()
-  ) {
-    return '昨日'
-  }
-  // 2〜5日前は曜日
-  for (let i = 2; i <= 5; i++) {
-    const prev = new Date(now)
-    prev.setDate(now.getDate() - i)
-    if (
-      date.getFullYear() === prev.getFullYear() &&
-      date.getMonth() === prev.getMonth() &&
-      date.getDate() === prev.getDate()
-    ) {
-      const week = ['日', '月', '火', '水', '木', '金', '土']
-      return week[date.getDay()]
-    }
-  }
-  // 6日前以前は月/日
-  return `${date.getMonth() + 1}/${date.getDate()}`
-}
 
 export default function Main() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -104,7 +65,6 @@ export default function Main() {
   const [inputSending, setInputSending] = useState(false)
   const [presetMessages, setPresetMessages] = useState<PresetMessage[]>([])
   const [isSending, setIsSending] = useState(false)
-  const { setChatList } = useChatData()
 
   useEffect(() => {
     const uid = localStorage.getItem('userId')
@@ -134,23 +94,6 @@ export default function Main() {
         setPresetMessages(data)
       })
   }, [])
-
-  // チャットリストをプリフェッチ
-  useEffect(() => {
-    const userId = localStorage.getItem('userId')
-    if (!userId) return
-    axios
-      .get('/api/chat-list', { headers: { userId } })
-      .then((res) => {
-        // 日付・時刻を整形して保存
-        const formatted = res.data.map((c: any) => ({
-          ...c,
-          latestMessageAtDisplay: formatChatDate(c.latestMessageAt)
-        }))
-        setChatList(formatted)
-      })
-      .catch((e) => console.error('チャットリスト取得エラー:', e))
-  }, [setChatList])
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX)
