@@ -217,39 +217,40 @@ export default function Main() {
   return (
     <>
       {/* ヘッダー */}
-      <div className="fixed top-0 left-0 w-full bg-white z-10 p-4 flex flex-col items-center overflow-hidden">
-        <div className="flex w-full justify-between items-center">
-          <div className="w-24 flex items-center">
+      <div className="fixed top-0 left-0 w-full bg-gradient-to-b from-white via-orange-50 to-orange-100 z-20 px-6 pt-6 pb-3 flex flex-col items-center shadow-md rounded-b-3xl">
+        <div className="flex w-full justify-between items-center mb-2">
+          <div className="w-20 flex items-center">
             <button
               onClick={handleHistoryNavigation}
-              className="transition-transform duration-200 ease-out active:scale-150 focus:outline-none"
+              className="transition-transform duration-200 ease-out active:scale-125 focus:outline-none hover:bg-orange-100 rounded-full p-2"
             >
-              <Image src="/icons/history.png" alt="Notifications" width={24} height={24} className="cursor-pointer" />
+              <Image src="/icons/history.png" alt="Notifications" width={28} height={28} className="cursor-pointer" />
             </button>
           </div>
-          <div />
           <h1
-            className="text-3xl font-bold text-black whitespace-nowrap absolute left-1/2 transform -translate-x-1/2 mt-1"
+            className="text-xl font-extrabold text-orange-500 tracking-tight drop-shadow-sm whitespace-nowrap"
             style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             Happy Ice Cream
           </h1>
-          <div className="w-24" />
+          <div className="w-20" />
         </div>
-        <p className="text-sm text-gray-800 text-center leading-snug mt-4">
-          お互いが同じことばをシェアし合ったら初めて通知されます。今日は <strong>{matchCount}</strong> 件受信済。
+        <p className="text-[15px] text-gray-700 text-center leading-snug mt-1 font-medium">
+          <span className="bg-orange-100 px-2 py-0.5 rounded-xl">同じことばをシェアし合ったら初めて通知されます。</span>
+          <br />
+          <span className="text-orange-500 font-bold">{matchCount}</span> 件受信済
         </p>
       </div>
 
       {/* ── 送信待機バー ── */}
       <div
-        className={`fixed top-24 left-4 right-4 z-20 py-1 flex items-center h-16 pl-2 pr-2 shadow rounded-xl overflow-hidden
+        className={`fixed top-28 left-6 right-6 z-30 py-2 flex items-center h-16 px-3 shadow-lg rounded-2xl border border-orange-200 transition-all duration-200
           ${
             selectedMessage && selectedRecipientIds.length > 0
-              ? 'bg-orange-500'
+              ? 'bg-gradient-to-r from-orange-400 to-orange-300'
               : selectedMessage || selectedRecipientIds.length > 0
-                ? 'bg-orange-350'
-                : 'bg-orange-300'
+                ? 'bg-gradient-to-r from-orange-200 to-orange-100'
+                : 'bg-orange-50'
           }
         `}
       >
@@ -260,7 +261,7 @@ export default function Main() {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder="Aa..."
-              className="flex-1 px-2 py-1 rounded border text-base"
+              className="flex-1 px-3 py-2 rounded-xl border border-orange-200 text-base bg-white shadow-sm focus:ring-2 focus:ring-orange-200 outline-none transition"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && inputMessage.trim()) {
                   setSelectedMessage(inputMessage.trim())
@@ -281,46 +282,50 @@ export default function Main() {
               onClick={() => {
                 setSelectedMessage(null)
               }}
-              className={`${selectedMessage ? 'font-bold text-white' : 'text-gray-100'} cursor-pointer`}
+              className={`px-3 py-2 rounded-xl font-bold cursor-pointer bg-white/80 text-orange-600 shadow border border-orange-200 hover:bg-orange-100 transition`}
             >
               {selectedMessage}
             </span>
           )}
-          <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide">
+          <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide mt-1">
             {selectedRecipientIds.length > 0 ? (
               selectedRecipientIds.map((id, idx) => {
                 const u = users.find((u) => u.id === id)
                 return (
-                  <span key={id} onClick={() => toggleRecipient(id)} className="inline-block mr-1 font-bold text-white">
+                  <span
+                    key={id}
+                    onClick={() => toggleRecipient(id)}
+                    className="inline-block mr-1 font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded-xl shadow cursor-pointer hover:bg-orange-200 transition"
+                  >
                     {u?.name}
                     {idx < selectedRecipientIds.length - 1 ? ',' : ''}
                   </span>
                 )
               })
             ) : (
-              <span className="text-gray-200">誰に送る？</span>
+              <span className="text-orange-300">誰に送る？</span>
             )}
           </div>
         </div>
         <button
           onClick={canSend ? handleSend : handleMessageIconClick}
-          className="flex-none px-1 py-1 transition-transform duration-200 ease-out active:scale-150 focus:outline-none"
+          className="flex-none px-1 py-1 transition-transform duration-200 ease-out active:scale-125 focus:outline-none rounded-full bg-white/80 hover:bg-orange-100 shadow border border-orange-200"
           disabled={!canSend || isSending}
           style={{ minWidth: 36, minHeight: 36 }}
         >
           <Image
             src={canSend ? '/icons/send.png' : '/icons/message.png'}
             alt="send"
-            width={24}
-            height={24}
-            className="filter invert"
+            width={28}
+            height={28}
+            className=""
           />
         </button>
       </div>
 
       {/* コンテンツ */}
       <main
-        className="flex-1 overflow-y-auto overflow-x-hidden"
+        className="flex-1 overflow-y-auto overflow-x-hidden bg-orange-50"
         style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -341,8 +346,10 @@ export default function Main() {
                 <button
                   key={msg.id}
                   onClick={() => handleSelectMessage(msg.content)}
-                  className={`w-full flex justify-between items-center text-left px-4 py-3 rounded-3xl shadow transition-transform duration-100 ease-out active:scale-95 ${
-                    selectedMessage === msg.content ? 'font-bold text-black bg-gray-300' : 'text-gray-700'
+                  className={`w-full flex justify-between items-center text-left px-5 py-3 rounded-3xl shadow-md border border-orange-100 hover:bg-orange-100 active:scale-95 transition font-medium text-base ${
+                    selectedMessage === msg.content
+                      ? 'font-bold text-orange-700 bg-orange-200 border-orange-300 shadow-lg'
+                      : 'text-gray-700 bg-white'
                   }`}
                 >
                   <span>{msg.content}</span>
@@ -364,13 +371,12 @@ export default function Main() {
                   <div
                     key={u.id}
                     onClick={() => toggleRecipient(u.id)}
-                    className="flex items-center gap-3 p-3 rounded-3xl shadow transition-transform duration-100 ease-out active:scale-95"
-                    style={{
-                      backgroundColor: selectedRecipientIds.includes(u.id) ? getBgColorLight(u.name) : undefined
-                    }}
+                    className={`flex items-center gap-3 p-3 rounded-3xl shadow-md border border-orange-100 hover:bg-orange-100 active:scale-95 transition cursor-pointer ${
+                      selectedRecipientIds.includes(u.id) ? 'bg-orange-200 border-orange-300 shadow-lg' : 'bg-white'
+                    }`}
                   >
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow"
                       style={{ backgroundColor: getBgColor(u.name) }}
                     >
                       {getInitials(u.name)}
@@ -378,7 +384,7 @@ export default function Main() {
                     <div className="flex-1 min-w-0">
                       <p
                         className={`text-lg truncate ${
-                          selectedRecipientIds.includes(u.id) ? 'font-bold text-black' : 'text-gray-700'
+                          selectedRecipientIds.includes(u.id) ? 'font-bold text-orange-700' : 'text-gray-700'
                         }`}
                       >
                         {u.name}
@@ -395,23 +401,27 @@ export default function Main() {
       </main>
 
       {/* リスト選択エリア（下部固定） */}
-      <div className="fixed bottom-[50px] left-[40px] right-[40px] z-20 bg-white py-1.5 px-3 rounded-3xl shadow">
+      <div className="fixed bottom-[56px] left-8 right-8 z-30 bg-white py-2 px-4 rounded-3xl shadow-lg border border-orange-200">
         <div className="relative flex">
           <span
-            className="absolute top-0 bottom-0 w-1/2 bg-gray-200 rounded-3xl transition-transform duration-400"
+            className="absolute top-0 bottom-0 w-1/2 bg-orange-100 rounded-3xl transition-transform duration-400"
             style={{
               transform: step === 'select-message' ? 'translateX(0%)' : 'translateX(100%)'
             }}
           />
           <button
             onClick={() => setStep('select-message')}
-            className="relative z-10 flex-1 py-2 text-center text-sm font-bold text-gray-600"
+            className={`relative z-10 flex-1 py-2 text-center text-base font-bold rounded-3xl transition text-orange-600 ${
+              step === 'select-message' ? 'bg-orange-200 shadow' : ''
+            }`}
           >
             ことばリスト
           </button>
           <button
             onClick={() => setStep('select-recipients')}
-            className="relative z-10 flex-1 py-2 text-center text-sm font-bold text-gray-600"
+            className={`relative z-10 flex-1 py-2 text-center text-base font-bold rounded-3xl transition text-orange-600 ${
+              step === 'select-recipients' ? 'bg-orange-200 shadow' : ''
+            }`}
           >
             ともだちリスト
           </button>
