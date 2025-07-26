@@ -15,7 +15,6 @@ export interface ChatItem {
   latestMessageAt: string // フォーマット済み日時
   latestMessageAtRaw: string // 生の日時文字列
   latestMessageSenderId: string // 最新メッセージの送信者ID
-  latestMessageAtDisplay: string // ユーザーに表示するためのフォーマット済み日時
 }
 
 // ユーザー名からイニシャル生成
@@ -79,11 +78,65 @@ function formatChatDate(dateString: string | null): string {
 export default function ChatList() {
   const router = useRouter()
   const { chatList, setChatList } = useChatData()
+  const [chats, setChats] = useState<ChatItem[]>(chatList || [])
+  const [isLoading, setIsLoading] = useState(false)
   const [unreadCounts, setUnreadCounts] = useState<{ [chatId: string]: number }>({})
   const [userId, setUserId] = useState<string | null>(null)
 
+  // チャット一覧取得＆キャッシュ更新
+  const fetchChats = async () => {
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
+    if (!userId) return
+    setIsLoading(true)
+    try {
+      const res = await axios.get<ChatItem[]>('/api/chat-list', {
+        headers: { userId }
+      })
+      const formatted = res.data
+        .map((c) => ({
+          ...c,
+          latestMessageAtRaw: c.latestMessageAt,
+          latestMessageAt: c.latestMessageAt
+            ? new Date(c.latestMessageAt).toLocaleString('ja-JP', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            : ''
+        }))
+        .sort(
+          (a, b) =>
+            (b.latestMessageAt ? new Date(b.latestMessageAt).getTime() : 0) -
+            (a.latestMessageAt ? new Date(a.latestMessageAt).getTime() : 0)
+        )
+      setChats(formatted)
+      setChatList(formatted)
+      // 未読件数計算
+      const unread: { [chatId: string]: number } = {}
+      for (const chat of res.data) {
+        if (!chat.latestMessageAt || chat.latestMessage === 'メッセージなし') continue
+        // 送信者が自分なら未読0
+        if (chat.latestMessageSenderId === userId) {
+          unread[chat.chatId] = 0
+          continue
+        }
+        const lastRead = localStorage.getItem(`chat-last-read-${chat.chatId}`)
+        const lastReadTime = lastRead ? new Date(lastRead).getTime() : 0
+        const latestMsgTime = chat.latestMessageAt ? new Date(chat.latestMessageAt).getTime() : 0
+        unread[chat.chatId] = latestMsgTime > lastReadTime ? 1 : 0
+      }
+      setUnreadCounts(unread)
+    } catch (e) {
+      console.error('🚨 チャットリスト取得エラー:', e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   useEffect(() => {
     setUserId(localStorage.getItem('userId'))
+    fetchChats()
   }, [])
 
   // チャットを開いたら最終閲覧時刻を記録
@@ -91,10 +144,6 @@ export default function ChatList() {
     localStorage.setItem(`chat-last-read-${chatId}`, new Date().toISOString())
     setUnreadCounts((prev) => ({ ...prev, [chatId]: 0 }))
     router.push(`/chat/${chatId}`)
-  }
-
-  if (!chatList) {
-    return <div>読み込み中...</div>
   }
 
   return (
@@ -106,11 +155,13 @@ export default function ChatList() {
 
       {/* スクロール可能リスト */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        {chatList.length === 0 ? (
+        {isLoading && chats.length === 0 ? (
+          <p className="text-center text-gray-500">読み込み中…</p>
+        ) : chats.length === 0 ? (
           <p className="text-center text-gray-500">まだチャットがありません</p>
         ) : (
           <ul className="space-y-2 pb-20">
-            {chatList.map((chat) => {
+            {chats.map((chat) => {
               const isLatestFromMe = chat.latestMessageSenderId === userId
               return (
                 <li
@@ -131,7 +182,7 @@ export default function ChatList() {
                       <span className="text-base font-semibold text-black truncate">{chat.matchedUser.name}</span>
                       <div className="flex flex-col items-end min-w-[56px]">
                         <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                          {chat.latestMessageAtDisplay}
+                          {formatChatDate(chat.latestMessageAtRaw)}
                         </span>
                         {/* 未読バッジ */}
                         {unreadCounts[chat.chatId] > 0 && !isLatestFromMe && (
