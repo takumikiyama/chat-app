@@ -39,7 +39,7 @@ export type Message = {
 export default function Chat() {
   const router = useRouter()
   const { chatId } = useParams()
-  const { chatData } = useChatData()
+  const { chatData, chatList, isPreloading } = useChatData()
   const initialMessages = chatData[chatId as string] as Message[] | undefined
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -56,58 +56,41 @@ export default function Chat() {
     setCurrentUserId(localStorage.getItem('userId'))
   }, [])
 
-  // 2) 事前フェッチされたデータがあれば即セット
+  // 2) Contextからマッチメッセージを取得
+  useEffect(() => {
+    if (chatList && chatId) {
+      const chat = chatList.find((c) => c.chatId === chatId)
+      if (chat) {
+        setMatchMessage(chat.matchMessage || '')
+      }
+    }
+  }, [chatList, chatId])
+
+  // 3) 事前フェッチされたデータがあれば即セット
   useEffect(() => {
     if (initialMessages) {
-      const formatted = initialMessages.map((msg) => ({
-        ...msg,
-        formattedDate: new Date(msg.createdAt).toLocaleString('ja-JP', {
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-      }))
-      setMessages(formatted)
+      setMessages(initialMessages)
     }
   }, [initialMessages])
 
-  // 3) 必要ならAPIから取得、マッチメッセージ取得、Socket接続
+  // 4) Contextにデータがない場合のみAPIから取得
   useEffect(() => {
-    if (!chatId) return
-    // 既に初期データがあれば取得をスキップ
-    if (!initialMessages) {
-      ;(async () => {
-        try {
-          const res = await axios.get<Message[]>(`/api/chat/${chatId}`)
-          const formatted = res.data.map((msg) => ({
-            ...msg,
-            formattedDate: new Date(msg.createdAt).toLocaleString('ja-JP', {
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          }))
-          setMessages(formatted)
-        } catch (e) {
-          console.error('🚨 メッセージ取得エラー:', e)
-        }
-      })()
-    }
-
-    // MatchPair からマッチメッセージ取得
+    if (!chatId || initialMessages || isPreloading) return
     ;(async () => {
       try {
-        const userId = localStorage.getItem('userId')
-        if (!userId) return
-        const res = await axios.get<
-          { chatId: string; matchedUser: { id: string; name: string }; matchMessage: string }[]
-        >('/api/chat-list', { headers: { userId } })
-        const chat = res.data.find((c) => c.chatId === chatId)
-        setMatchMessage(chat?.matchMessage || '')
+        const res = await axios.get<Message[]>(`/api/chat/${chatId}`)
+        const formatted = res.data.map((msg) => ({
+          ...msg,
+          formattedDate: new Date(msg.createdAt).toLocaleString('ja-JP', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        }))
+        setMessages(formatted)
       } catch (e) {
-        console.error('🚨 マッチメッセージ取得エラー:', e)
+        console.error('🚨 メッセージ取得エラー:', e)
       }
     })()
 
@@ -132,7 +115,7 @@ export default function Chat() {
     return () => {
       socket.off('newMessage', handleNewMessage)
     }
-  }, [chatId, initialMessages])
+  }, [chatId, initialMessages, isPreloading])
 
   // 4) メッセージ更新時に自動スクロール
   useEffect(() => {
@@ -182,6 +165,23 @@ export default function Chat() {
   // 6) ヘッダー表示用
   const partner = messages.find((m) => m.sender.id !== currentUserId)
   const partnerName = partner?.sender.name || 'チャット'
+
+  // ローディング状態の表示
+  if (isPreloading && messages.length === 0) {
+    return (
+      <div className="flex flex-col bg-white h-screen">
+        <header className="sticky top-0 z-10 bg-white px-4 py-2 flex flex-col items-center">
+          <button onClick={() => router.push('/chat-list')} className="absolute left-4 top-2 focus:outline-none">
+            <Image src="/icons/back.png" alt="Back" width={20} height={20} />
+          </button>
+          <h1 className="text-base font-bold text-black">読み込み中...</h1>
+        </header>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-gray-500">チャットデータを読み込み中...</div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col bg-white h-screen">

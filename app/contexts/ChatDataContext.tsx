@@ -14,6 +14,7 @@ type ChatContextType = {
   setChatData: React.Dispatch<React.SetStateAction<ChatMap>>
   chatList: ChatItem[] | null
   setChatList: React.Dispatch<React.SetStateAction<ChatItem[] | null>>
+  isPreloading: boolean
 }
 
 // チャットリスト用 日付・時刻・曜日表示関数
@@ -63,27 +64,64 @@ const ChatDataContext = createContext<ChatContextType | undefined>(undefined)
 export function ChatDataProvider({ children }: { children: ReactNode }) {
   const [chatData, setChatData] = useState<ChatMap>({})
   const [chatList, setChatList] = useState<ChatItem[] | null>(null)
+  const [isPreloading, setIsPreloading] = useState(true)
 
-  // アプリ起動時にチャットリストをプリフェッチ
+  // アプリ起動時にチャットリストとチャットデータをプリフェッチ
   useEffect(() => {
     const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
-    if (!userId) return
+    if (!userId) {
+      setIsPreloading(false)
+      return
+    }
 
-    axios
-      .get('/api/chat-list', { headers: { userId } })
-      .then((res) => {
-        // 日付・時刻を整形して保存
-        const formatted = res.data.map((c: any) => ({
+    const preloadData = async () => {
+      try {
+        // 1. チャットリストを取得
+        const chatListRes = await axios.get('/api/chat-list', { headers: { userId } })
+        const formattedChatList = chatListRes.data.map((c: any) => ({
           ...c,
           latestMessageAtDisplay: formatChatDate(c.latestMessageAt)
         }))
-        setChatList(formatted)
-      })
-      .catch((e) => console.error('チャットリスト取得エラー:', e))
+        setChatList(formattedChatList)
+
+        // 2. 各チャットのメッセージを並行取得
+        const chatDataPromises = formattedChatList.map(async (chat) => {
+          try {
+            const messagesRes = await axios.get<Message[]>(`/api/chat/${chat.chatId}`)
+            const formattedMessages = messagesRes.data.map((msg) => ({
+              ...msg,
+              formattedDate: new Date(msg.createdAt).toLocaleString('ja-JP', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            }))
+            return { chatId: chat.chatId, messages: formattedMessages }
+          } catch (error) {
+            console.error(`チャット ${chat.chatId} のメッセージ取得エラー:`, error)
+            return { chatId: chat.chatId, messages: [] }
+          }
+        })
+
+        const chatDataResults = await Promise.all(chatDataPromises)
+        const newChatData: ChatMap = {}
+        chatDataResults.forEach(({ chatId, messages }) => {
+          newChatData[chatId] = messages
+        })
+        setChatData(newChatData)
+      } catch (error) {
+        console.error('プリフェッチエラー:', error)
+      } finally {
+        setIsPreloading(false)
+      }
+    }
+
+    preloadData()
   }, [])
 
   return (
-    <ChatDataContext.Provider value={{ chatData, setChatData, chatList, setChatList }}>
+    <ChatDataContext.Provider value={{ chatData, setChatData, chatList, setChatList, isPreloading }}>
       {children}
     </ChatDataContext.Provider>
   )
