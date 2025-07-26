@@ -8,6 +8,15 @@ import axios from 'axios'
 // チャットごとのメッセージキャッシュ
 type ChatMap = Record<string, Message[]>
 
+// プリセットメッセージ型
+export type PresetMessage = {
+  id: string
+  content: string
+  createdBy: string
+  createdAt: string
+  count: number
+}
+
 // Contextの型定義
 type ChatContextType = {
   chatData: ChatMap
@@ -15,6 +24,8 @@ type ChatContextType = {
   chatList: ChatItem[] | null
   setChatList: React.Dispatch<React.SetStateAction<ChatItem[] | null>>
   isPreloading: boolean
+  presetMessages: PresetMessage[]
+  setPresetMessages: React.Dispatch<React.SetStateAction<PresetMessage[]>>
 }
 
 // チャットリスト用 日付・時刻・曜日表示関数
@@ -65,6 +76,7 @@ export function ChatDataProvider({ children }: { children: ReactNode }) {
   const [chatData, setChatData] = useState<ChatMap>({})
   const [chatList, setChatList] = useState<ChatItem[] | null>(null)
   const [isPreloading, setIsPreloading] = useState(true)
+  const [presetMessages, setPresetMessages] = useState<PresetMessage[]>([])
 
   // アプリ起動時にチャットリストとチャットデータをプリフェッチ
   useEffect(() => {
@@ -76,6 +88,12 @@ export function ChatDataProvider({ children }: { children: ReactNode }) {
 
     const preloadData = async () => {
       try {
+        // プリセットメッセージも取得
+        const presetRes = await fetch('/api/preset-message')
+        if (presetRes.ok) {
+          const presetData = await presetRes.json()
+          setPresetMessages(presetData)
+        }
         // 1. チャットリストを取得
         const chatListRes = await axios.get('/api/chat-list', { headers: { userId } })
         const formattedChatList = chatListRes.data.map((c: any) => ({
@@ -121,7 +139,9 @@ export function ChatDataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <ChatDataContext.Provider value={{ chatData, setChatData, chatList, setChatList, isPreloading }}>
+    <ChatDataContext.Provider
+      value={{ chatData, setChatData, chatList, setChatList, isPreloading, presetMessages, setPresetMessages }}
+    >
       {children}
     </ChatDataContext.Provider>
   )

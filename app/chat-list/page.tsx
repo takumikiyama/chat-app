@@ -163,6 +163,28 @@ export default function ChatList() {
     fetchChats()
   }, [])
 
+  // ContextのchatListが更新されたら即座に反映
+  useEffect(() => {
+    if (chatList && chatList.length > 0) {
+      setChats(chatList)
+      // 未読件数計算
+      const unread: { [chatId: string]: number } = {}
+      for (const chat of chatList) {
+        if (!chat.latestMessageAt || chat.latestMessage === 'メッセージなし') continue
+        // 送信者が自分なら未読0
+        if (chat.latestMessageSenderId === userId) {
+          unread[chat.chatId] = 0
+          continue
+        }
+        const lastRead = localStorage.getItem(`chat-last-read-${chat.chatId}`)
+        const lastReadTime = lastRead ? new Date(lastRead).getTime() : 0
+        const latestMsgTime = chat.latestMessageAt ? new Date(chat.latestMessageAt).getTime() : 0
+        unread[chat.chatId] = latestMsgTime > lastReadTime ? 1 : 0
+      }
+      setUnreadCounts(unread)
+    }
+  }, [chatList, userId])
+
   // チャットを開いたら最終閲覧時刻を記録
   const handleOpenChat = (chatId: string) => {
     localStorage.setItem(`chat-last-read-${chatId}`, new Date().toISOString())

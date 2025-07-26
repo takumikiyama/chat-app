@@ -5,6 +5,7 @@ import axios from 'axios'
 import Image from 'next/image'
 import FixedTabBar from '../components/FixedTabBar'
 import { useRouter } from 'next/navigation'
+import { useChatData, PresetMessage } from '../contexts/ChatDataContext'
 
 interface User {
   id: string
@@ -38,14 +39,6 @@ function getBgColor(name: string) {
   return `hsl(${h}, 70%, 80%)`
 }
 
-type PresetMessage = {
-  id: string
-  content: string
-  createdBy: string
-  createdAt: string
-  count: number
-}
-
 // チャットリスト用 日付・時刻・曜日表示関数
 
 export default function Main() {
@@ -63,7 +56,8 @@ export default function Main() {
   const [isInputMode, setIsInputMode] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [inputSending, setInputSending] = useState(false)
-  const [presetMessages, setPresetMessages] = useState<PresetMessage[]>([])
+  // Contextからプリセットメッセージを取得
+  const { presetMessages, setPresetMessages } = useChatData()
   const [isSending, setIsSending] = useState(false)
 
   useEffect(() => {
@@ -84,15 +78,6 @@ export default function Main() {
       .get<User[]>('/api/users')
       .then((res) => setUsers(res.data))
       .catch((e) => console.error('ユーザー取得エラー:', e))
-  }, [])
-
-  // プリセットメッセージ取得
-  useEffect(() => {
-    fetch('/api/preset-message')
-      .then((res) => res.json())
-      .then((data) => {
-        setPresetMessages(data)
-      })
   }, [])
 
   const handleTouchStart = (e: React.TouchEvent) => {
